@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Sidecut">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
- 
+
   :root{
     --bg: #0E1B1F;
     --bg-raised: #16262B;
@@ -32,7 +32,7 @@
   }
   ::selection{ background: var(--coral); color:#161616; }
   h1,h2,h3{ font-family:'Fraunces', serif; font-weight:600; margin:0; }
- 
+
   header{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 10px; }
   .brand{ display:flex; align-items:center; gap:10px; }
   .brand-mark{ width:30px; height:30px; border-radius:50%;
@@ -40,7 +40,7 @@
     box-shadow: 0 0 0 2px var(--line); flex-shrink:0; }
   .brand h1{ font-size:19px; }
   .brand span{ display:block; font-size:11px; color:var(--ink-dim); font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
- 
+
   .action-strip{
     display:flex; gap:8px; padding: 2px 20px 14px; overflow-x:auto;
   }
@@ -51,7 +51,7 @@
     background: var(--bg-raised); color: var(--ink-dim);
   }
   .action-pill.primary{ background: var(--coral); color:#161616; border-color:var(--coral); }
- 
+
   /* ---------- Empty state ---------- */
   #emptyState{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:24px; text-align:center; }
   .disc{
@@ -68,7 +68,7 @@
   @keyframes spin{ to{ transform: rotate(360deg); } }
   #emptyState h2{ font-size:24px; max-width:300px; line-height:1.3; }
   #emptyState p{ color:var(--ink-dim); max-width:280px; font-size:14px; line-height:1.5; }
- 
+
   /* ---------- Library ---------- */
   #library{ display:none; flex:1; flex-direction:column; min-height:0; }
   .tabs{ display:flex; gap:8px; padding:4px 20px 14px; overflow-x:auto; }
@@ -79,7 +79,7 @@
     cursor:pointer; white-space:nowrap;
   }
   .tab.active{ color:var(--bg); background:var(--gold); border-color:var(--gold); font-weight:600; }
- 
+
   #listPane{ flex:1; overflow-y:auto; padding: 4px 0 150px; min-height:0; }
   .pane-header{ padding:8px 20px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); margin-bottom:6px; }
   .pane-header h2{ font-size:20px; }
@@ -90,7 +90,7 @@
     width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .icon-btn svg{ width:16px; height:16px; }
- 
+
   .track{
     display:flex; align-items:center; gap:12px; padding:11px 20px;
     cursor:pointer; border-bottom:1px solid var(--line);
@@ -108,17 +108,24 @@
     50%{ box-shadow: inset 3px 0 0 var(--coral), 0 0 22px rgba(255,111,89,0.45); }
   }
   .track.playing .track-info .t{ color: var(--coral); }
+  .track.dragging{
+    background: var(--bg-raised);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 20; position: relative; border-radius: 10px;
+  }
+  #npInfo{ cursor:pointer; }
+  #npInfo .lyricsHint{ font-size:10px; color:var(--gold); font-family:'JetBrains Mono',monospace; }
   .track-info{ flex:1; min-width:0; }
   .track-info .t{ font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .track-info .a{ font-size:12px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .track .dur{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-dim); flex-shrink:0; }
   .track .remove{ color:var(--ink-dim); background:none; border:none; padding:6px; flex-shrink:0; cursor:pointer; }
   .track .remove svg{ width:15px; height:15px; }
- 
+
   .empty-list{ padding:50px 24px; text-align:center; color:var(--ink-dim); font-size:13.5px; }
- 
+
   input[type=file]{ display:none; }
- 
+
   /* ---------- Now playing bar ---------- */
   #nowPlaying{
     position:fixed; left:0; right:0; bottom:0; background: var(--bg-raised); border-top:1px solid var(--line);
@@ -141,20 +148,20 @@
   }
   #playPauseBtn svg{ fill:#FFFFFF; width:19px; height:19px; }
   #shuffleBtn.active, #repeatBtn.active{ color: var(--coral); }
- 
+
   .seek-row{ display:flex; align-items:center; gap:8px; }
   .seek-row span{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-dim); width:32px; flex-shrink:0; }
   .seek-row span:last-child{ text-align:right; }
   #seekBar{ flex:1; -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #seekBar::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--coral); }
- 
+
   .toast{
     position:fixed; top:16px; left:50%; transform:translateX(-50%);
     background: var(--bg-raised); border:1px solid var(--line); color:var(--ink);
     padding:10px 18px; border-radius:20px; font-size:12.5px; z-index:50; display:none;
     box-shadow:0 8px 24px rgba(0,0,0,0.4);
   }
- 
+
   /* ---------- Modal ---------- */
   .modal-backdrop{
     position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none;
@@ -183,7 +190,7 @@
 </style>
 </head>
 <body>
- 
+
 <header>
   <div class="brand">
     <div class="brand-mark"></div>
@@ -197,9 +204,9 @@
   <button id="importLibBtn" class="action-pill">Import library</button>
 </div>
 <input type="file" id="importLibInput" accept=".zip">
- 
+
 <div class="toast" id="toast"></div>
- 
+
 <div id="emptyState">
   <div class="disc" id="emptyDisc"></div>
   <div>
@@ -211,7 +218,7 @@
     <button id="addBtnBig" class="tab" style="padding:12px 22px; font-size:14px;">+ Choose files</button>
   </div>
 </div>
- 
+
 <div id="library">
   <div style="padding: 6px 20px 12px;">
     <input type="text" id="searchInput" placeholder="Search songs or artists…"
@@ -221,14 +228,14 @@
   <div class="tabs" id="tabs"></div>
   <div id="listPane"></div>
 </div>
- 
+
 <input type="file" id="fileInput" accept="audio/*,.mp3,.m4a,.wav,.flac,.ogg,.aac,.wma,.opus,.aiff,.alac" multiple>
 <input type="file" id="folderInput" webkitdirectory directory multiple>
- 
+
 <div id="nowPlaying">
   <div class="np-row">
     <div class="disc" id="npDisc"></div>
-    <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div></div>
+    <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div><div class="lyricsHint" id="npLyricsHint"></div></div>
     <div id="npControls">
       <button id="shuffleBtn" title="Shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.83 13.41l1.41-1.41 3.83 3.83-3.83 3.83-1.41-1.41 1.42-1.42H14a3 3 0 01-2.24-1l-3.28-3.65A1 1 0 007.76 13H3v-2h4.76a3 3 0 012.24 1l3.28 3.65a1 1 0 00.72.35h2.24l-1.42-1.42zM14.83 4.59L16.24 3.18 20.07 7l-3.83 3.83-1.41-1.41L16.24 8H14a1 1 0 00-.72.35L11.15 10.6 9.7 9.03l1.83-2.03a3 3 0 012.24-1h2.24l-1.42-1.41zM3 7h2.76a3 3 0 012.24 1l.7.78-1.45 1.57-.7-.78a1 1 0 00-.72-.35H3z"/></svg></button>
       <button id="prevBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
@@ -246,10 +253,10 @@
     <span id="totalTime">0:00</span>
   </div>
 </div>
- 
+
 <audio id="audioEl"></audio>
 <audio id="audioEl2"></audio>
- 
+
 <!-- New playlist modal -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
@@ -261,7 +268,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- Add-to-playlist modal (buttons, no typing) -->
 <div class="modal-backdrop" id="addToPlaylistBackdrop">
   <div class="modal">
@@ -272,7 +279,21 @@
     </div>
   </div>
 </div>
- 
+
+<!-- Lyrics modal -->
+<div class="modal-backdrop" id="lyricsBackdrop">
+  <div class="modal">
+    <h3 id="lyricsModalTitle">Lyrics</h3>
+    <textarea id="lyricsTextarea" rows="10" placeholder="Paste or type lyrics/notes for this song…"
+      style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink);
+      border-radius:8px; padding:11px 12px; font-size:13.5px; font-family:'Inter',sans-serif; resize:vertical;"></textarea>
+    <div class="modal-btns">
+      <button class="cancel" id="lyricsCancel">Cancel</button>
+      <button class="confirm" id="lyricsSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
@@ -284,7 +305,7 @@
     clearTimeout(toastEl._t);
     toastEl._t = setTimeout(()=> toastEl.style.display='none', ms);
   }
- 
+
   // In-memory library, backed by IndexedDB so it survives reloads —
   // once you've imported your files the first time, they auto-load
   // every time you reopen the page, no re-picking needed.
@@ -304,19 +325,19 @@
   let crossfadeTriggered = false;
   let crossfadeRAF = null;
   let pendingNextIndex = null;
- 
+
   const audio = $('audioEl');
   const audio2 = $('audioEl2');
   const audios = [audio, audio2];
   let activeIdx = 0;
   function activeAudio(){ return audios[activeIdx]; }
   function inactiveAudio(){ return audios[1-activeIdx]; }
- 
+
   // ---------------- Persistence (IndexedDB) ----------------
   const DB_NAME = 'sidecut_local_db';
   const DB_VERSION = 1;
   let dbPromise = null;
- 
+
   function openDB(){
     if(dbPromise) return dbPromise;
     dbPromise = new Promise((resolve, reject) => {
@@ -331,7 +352,7 @@
     });
     return dbPromise;
   }
- 
+
   async function dbPut(storeName, value){
     try{
       const db = await openDB();
@@ -365,12 +386,12 @@
       });
     }catch(e){ console.error('Storage read failed', e); return []; }
   }
- 
+
   function saveMeta(){
     dbPut('meta', { key: 'playlists', value: playlists });
     dbPut('meta', { key: 'idCounter', value: idCounter });
   }
- 
+
   let lastStateSave = 0;
   function savePlaybackState(force){
     const now = Date.now();
@@ -386,24 +407,25 @@
       }
     });
   }
- 
+
   async function loadFromDB(){
     const [trackRows, metaRows] = await Promise.all([dbGetAll('tracks'), dbGetAll('meta')]);
     if(!trackRows.length) return false;
- 
+
     const metaMap = {};
     metaRows.forEach(r => metaMap[r.key] = r.value);
- 
+
     allTracks = trackRows.map(r => ({
       id: r.id, file: r.blob, name: r.name, artist: r.artist,
       url: URL.createObjectURL(r.blob), duration: r.duration || null, bpm: r.bpm ?? null,
+      lyrics: r.lyrics || '',
     }));
     playlists = metaMap.playlists || { 'All Songs': allTracks.map(t => t.id) };
     idCounter = metaMap.idCounter || allTracks.length;
     lastPlaybackState = metaMap.playback || null;
     return true;
   }
- 
+
   function escapeHtml(s){
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -418,7 +440,7 @@
     if(parts.length >= 2) return { artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim() };
     return { artist: 'Unknown artist', title: base };
   }
- 
+
   // ---------------- File handling ----------------
   function handleFiles(fileList){
     const added = [];
@@ -427,11 +449,11 @@
       const meta = guessMeta(file.name);
       const id = 't' + (idCounter++);
       const url = URL.createObjectURL(file);
-      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null };
+      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, lyrics: '' };
       allTracks.push(track);
       playlists['All Songs'].push(id);
       added.push(track);
-      dbPut('tracks', { id, blob: file, name: meta.title, artist: meta.artist, duration: null, bpm: null });
+      dbPut('tracks', { id, blob: file, name: meta.title, artist: meta.artist, duration: null, bpm: null, lyrics: '' });
     });
     if(added.length){
       saveMeta();
@@ -455,7 +477,7 @@
       toast('No audio files found in that selection.');
     }
   }
- 
+
   $('fileInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
   $('folderInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
   $('addBtn').addEventListener('click', () => $('fileInput').click());
@@ -473,7 +495,7 @@
     e.target.value = '';
     if(file) importLibrary(file);
   });
- 
+
   // ---------------- Tabs / playlists ----------------
   function renderTabs(){
     const tabs = $('tabs');
@@ -492,7 +514,7 @@
     newTab.addEventListener('click', openNewPlaylistModal);
     tabs.appendChild(newTab);
   }
- 
+
   function openNewPlaylistModal(){
     $('playlistNameInput').value = '';
     $('modalBackdrop').style.display = 'flex';
@@ -512,7 +534,7 @@
     renderList();
     toast(`Created "${name}"`);
   });
- 
+
   function getSortedIds(ids){
     const arr = ids.slice();
     if(currentSort === 'alpha'){
@@ -524,7 +546,7 @@
     }
     return arr;
   }
- 
+
   // ---------------- List rendering ----------------
   function renderList(){
     const pane = $('listPane');
@@ -538,7 +560,7 @@
       });
     }
     const isAllSongs = activePlaylist === 'All Songs';
- 
+
     pane.innerHTML = '';
     const header = document.createElement('div');
     header.className = 'pane-header';
@@ -565,7 +587,7 @@
     $('mixBtn').addEventListener('click', () => startMix(ids));
     $('exportBtn').addEventListener('click', () => isAllSongs ? exportLibrary() : exportPlaylist());
     if(!isAllSongs) $('deletePlaylistBtn').addEventListener('click', deleteActivePlaylist);
- 
+
     if(!ids.length){
       const empty = document.createElement('div');
       empty.className = 'empty-list';
@@ -573,7 +595,7 @@
       pane.appendChild(empty);
       return;
     }
- 
+
     ids.forEach((id, i) => {
       const t = allTracks.find(tr => tr.id === id);
       if(!t) return;
@@ -591,6 +613,7 @@
       `;
       row.addEventListener('click', (e) => {
         if(e.target.closest('.remove')) return;
+        if(row.dataset.justDragged) { delete row.dataset.justDragged; return; }
         playFromList(ids, id);
       });
       pane.appendChild(row);
@@ -600,9 +623,10 @@
           saveMeta();
           renderList();
         });
+        if(currentSort === 'default') attachDragReorder(row);
       }
     });
- 
+
     // "add to playlist" and "delete" buttons per row when in All Songs
     if(isAllSongs){
       pane.querySelectorAll('.track').forEach(row => {
@@ -615,7 +639,7 @@
           promptAddToPlaylist(row.dataset.id);
         });
         row.appendChild(addBtn);
- 
+
         const delBtn = document.createElement('button');
         delBtn.className = 'remove';
         delBtn.title = 'Delete from library';
@@ -628,12 +652,75 @@
       });
     }
   }
- 
+
+  // ---------------- Long-press drag-to-reorder (custom playlists only) ----------------
+  function attachDragReorder(row){
+    let longPressTimer = null;
+    let dragging = false;
+    let startX = 0, startY = 0;
+
+    row.addEventListener('pointerdown', (e) => {
+      if(e.target.closest('.remove')) return;
+      startX = e.clientX; startY = e.clientY;
+      longPressTimer = setTimeout(() => beginDrag(e), 420);
+      row.addEventListener('pointermove', cancelIfMoved);
+      row.addEventListener('pointerup', clearPress, { once:true });
+    });
+
+    function cancelIfMoved(ev){
+      if(dragging) return;
+      if(Math.abs(ev.clientX-startX) > 8 || Math.abs(ev.clientY-startY) > 8) clearPress();
+    }
+    function clearPress(){
+      clearTimeout(longPressTimer);
+      row.removeEventListener('pointermove', cancelIfMoved);
+    }
+
+    function beginDrag(e){
+      dragging = true;
+      row.classList.add('dragging');
+      row.setPointerCapture(e.pointerId);
+      if(navigator.vibrate) navigator.vibrate(15);
+
+      function onMove(ev){
+        const siblings = Array.from(row.parentElement.querySelectorAll('.track'));
+        const rowIndex = siblings.indexOf(row);
+        for(const sib of siblings){
+          if(sib === row) continue;
+          const rect = sib.getBoundingClientRect();
+          const mid = rect.top + rect.height/2;
+          const sibIndex = siblings.indexOf(sib);
+          if(ev.clientY > mid && sibIndex > rowIndex){
+            row.parentElement.insertBefore(row, sib.nextSibling);
+            break;
+          } else if(ev.clientY < mid && sibIndex < rowIndex){
+            row.parentElement.insertBefore(row, sib);
+            break;
+          }
+        }
+      }
+      function onUp(ev){
+        dragging = false;
+        row.classList.remove('dragging');
+        row.releasePointerCapture(ev.pointerId);
+        row.removeEventListener('pointermove', onMove);
+        row.removeEventListener('pointerup', onUp);
+        row.dataset.justDragged = '1';
+        const newIds = Array.from(row.parentElement.querySelectorAll('.track')).map(r => r.dataset.id);
+        playlists[activePlaylist] = newIds;
+        saveMeta();
+        renderList();
+      }
+      row.addEventListener('pointermove', onMove);
+      row.addEventListener('pointerup', onUp);
+    }
+  }
+
   function deleteTrack(id){
     const t = allTracks.find(tr => tr.id === id);
     if(!t) return;
     if(!confirm(`Delete "${t.name}" from your library? This removes it from every playlist too.`)) return;
- 
+
     // If it's currently playing, stop playback cleanly
     if(queue[queueIndex] === id){
       audio.pause();
@@ -641,7 +728,7 @@
       $('nowPlaying').style.display = 'none';
     }
     queue = queue.filter(x => x !== id);
- 
+
     Object.keys(playlists).forEach(name => {
       playlists[name] = playlists[name].filter(x => x !== id);
     });
@@ -649,12 +736,12 @@
     URL.revokeObjectURL(t.url);
     dbDelete('tracks', id);
     saveMeta();
- 
+
     toast(`Deleted "${t.name}"`);
     renderTabs();
     renderList();
   }
- 
+
   function promptAddToPlaylist(trackId){
     const names = Object.keys(playlists).filter(n => n !== 'All Songs');
     const container = $('addToPlaylistButtons');
@@ -683,7 +770,7 @@
   }
   $('addToPlaylistDone').addEventListener('click', () => { $('addToPlaylistBackdrop').style.display = 'none'; renderList(); });
   $('addToPlaylistBackdrop').addEventListener('click', e => { if(e.target === $('addToPlaylistBackdrop')){ $('addToPlaylistBackdrop').style.display='none'; renderList(); } });
- 
+
   function deleteActivePlaylist(){
     if(!confirm(`Delete "${activePlaylist}"? This won't delete the songs themselves.`)) return;
     delete playlists[activePlaylist];
@@ -692,7 +779,7 @@
     renderTabs();
     renderList();
   }
- 
+
   function exportPlaylist(){
     const ids = playlists[activePlaylist] || [];
     if(!ids.length){ toast('Nothing to export yet.'); return; }
@@ -711,7 +798,7 @@
     a.click();
     toast('Playlist exported as .m3u');
   }
- 
+
   // Full library export/import — bundles actual audio + playlists into one
   // .zip so you can carry your whole library into a newer version of this
   // page (or restore it after clearing browser data), no re-picking needed.
@@ -743,7 +830,7 @@
       if(btn){ btn.disabled = false; btn.textContent = 'Export library'; }
     }
   }
- 
+
   async function importLibrary(file){
     if(typeof JSZip === 'undefined'){ toast('Import tool failed to load — check your connection and reload.'); return; }
     toast('Importing library…', 3000);
@@ -784,7 +871,7 @@
       toast('Import failed — is that a valid Sidecut .zip?');
     }
   }
- 
+
   // ---------------- Playback (with crossfade) ----------------
   function playFromList(ids, startId){
     isMixMode = false;
@@ -800,7 +887,7 @@
     }
     return arr;
   }
- 
+
   function playCurrent(hardSwitch){
     if(queueIndex < 0 || queueIndex >= queue.length) return;
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
@@ -815,17 +902,41 @@
     updateNowPlayingUI(t);
     savePlaybackState(true);
   }
- 
+
   function updateNowPlayingUI(t){
     $('nowPlaying').style.display = 'flex';
     $('npTitle').textContent = t.name;
     $('npArtist').textContent = t.artist;
     $('npDisc').classList.add('spinning');
     $('mixBadge').style.display = isMixMode ? 'inline-block' : 'none';
+    $('npLyricsHint').textContent = t.lyrics ? '📝 Lyrics' : 'Tap for lyrics';
     highlightPlaying(t.id);
     updateMediaSession(t);
   }
- 
+
+  // ---------------- Lyrics ----------------
+  $('npInfo').addEventListener('click', () => {
+    if(queueIndex < 0 || queueIndex >= queue.length) return;
+    const t = allTracks.find(tr => tr.id === queue[queueIndex]);
+    if(!t) return;
+    $('lyricsModalTitle').textContent = `Lyrics — ${t.name}`;
+    $('lyricsTextarea').value = t.lyrics || '';
+    $('lyricsTextarea').dataset.trackId = t.id;
+    $('lyricsBackdrop').style.display = 'flex';
+  });
+  $('lyricsCancel').addEventListener('click', () => { $('lyricsBackdrop').style.display = 'none'; });
+  $('lyricsBackdrop').addEventListener('click', e => { if(e.target === $('lyricsBackdrop')) $('lyricsBackdrop').style.display = 'none'; });
+  $('lyricsSave').addEventListener('click', () => {
+    const id = $('lyricsTextarea').dataset.trackId;
+    const t = allTracks.find(tr => tr.id === id);
+    if(!t) return;
+    t.lyrics = $('lyricsTextarea').value;
+    dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, lyrics: t.lyrics });
+    $('npLyricsHint').textContent = t.lyrics ? '📝 Lyrics' : 'Tap for lyrics';
+    $('lyricsBackdrop').style.display = 'none';
+    toast('Lyrics saved');
+  });
+
   function updateMediaSession(t){
     if(!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -834,13 +945,13 @@
       album: 'Sidecut',
     });
   }
- 
+
   function highlightPlaying(id){
     document.querySelectorAll('.track').forEach(r => r.classList.toggle('playing', r.dataset.id === id));
     const activeRow = document.querySelector(`.track[data-id="${id}"]`);
     if(activeRow) activeRow.scrollIntoView({ behavior:'smooth', block:'center' });
   }
- 
+
   function cancelCrossfade(){
     if(crossfadeRAF){ clearInterval(crossfadeRAF); crossfadeRAF = null; }
     pendingNextIndex = null;
@@ -851,7 +962,7 @@
     activeAudio().volume = 1;
     crossfadeTriggered = false;
   }
- 
+
   function finishCrossfade(nextIndex){
     if(crossfadeRAF){ clearInterval(crossfadeRAF); crossfadeRAF = null; }
     const cur = activeAudio();
@@ -863,7 +974,7 @@
     pendingNextIndex = null;
     savePlaybackState(true);
   }
- 
+
   function maybeStartCrossfade(){
     if(crossfadeTriggered) return;
     let nextIndex = queueIndex + 1;
@@ -873,7 +984,7 @@
     }
     const nextTrack = allTracks.find(tr => tr.id === queue[nextIndex]);
     if(!nextTrack) return;
- 
+
     crossfadeTriggered = true;
     pendingNextIndex = nextIndex;
     const cur = activeAudio();
@@ -883,7 +994,7 @@
     nxt.volume = 0;
     nxt.play().catch(()=>{});
     updateNowPlayingUI(nextTrack); // show the incoming track as it starts blending in, like Spotify does
- 
+
     // setInterval instead of requestAnimationFrame — rAF is fully paused by
     // the browser when the tab isn't visible (e.g. you switched to a game),
     // which would otherwise strand the fade mid-transition.
@@ -896,7 +1007,7 @@
       if(p >= 1) finishCrossfade(nextIndex);
     }, 100);
   }
- 
+
   function hardAdvance(dir, wrap){
     cancelCrossfade();
     let next = queueIndex + dir;
@@ -907,7 +1018,7 @@
     queueIndex = next;
     playCurrent(true);
   }
- 
+
   function onTimeUpdate(e){
     const a = e.target;
     if(a !== activeAudio() || !a.duration) return;
@@ -946,14 +1057,14 @@
     if(repeatMode === 'one'){ a.currentTime = 0; a.play(); return; }
     hardAdvance(1, repeatMode === 'all');
   }
- 
+
   [audio, audio2].forEach(a => {
     a.addEventListener('play', onPlayEvt);
     a.addEventListener('pause', onPauseEvt);
     a.addEventListener('timeupdate', onTimeUpdate);
     a.addEventListener('ended', onEnded);
   });
- 
+
   $('playPauseBtn').addEventListener('click', () => {
     $('playPauseBtn').classList.remove('pulse-cue');
     const a = activeAudio();
@@ -983,7 +1094,7 @@
   });
   window.addEventListener('pagehide', () => savePlaybackState(true));
   document.addEventListener('visibilitychange', () => { if(document.hidden) savePlaybackState(true); });
- 
+
   // ---------------- Media Session: lock screen / notification controls ----------------
   if('mediaSession' in navigator){
     navigator.mediaSession.setActionHandler('play', () => activeAudio().play());
@@ -999,7 +1110,7 @@
       });
     }catch(e){ /* not all browsers support seekto */ }
   }
- 
+
   // ---------------- Mix: tempo analysis + compatibility ordering ----------------
   async function estimateBPM(track){
     const resp = await fetch(track.url);
@@ -1015,7 +1126,7 @@
     const raw = audioBuffer.getChannelData(0);
     const maxSamples = Math.min(raw.length, sampleRate * 45); // analyze up to first 45s
     const data = raw.subarray(0, maxSamples);
- 
+
     const hop = Math.round(sampleRate * 0.01); // 10ms frames
     const frameCount = Math.floor(data.length / hop);
     if(frameCount < 20) return null;
@@ -1043,7 +1154,7 @@
     }
     return Math.round(60 / (bestLag/frameRate));
   }
- 
+
   function buildMixOrder(tracks){
     // Chain tracks by nearest tempo so each transition feels close in energy/pace —
     // an approximation of "songs that go together," not true key/genre matching.
@@ -1061,7 +1172,7 @@
     }
     return ordered.concat(withoutBpm);
   }
- 
+
   async function startMix(ids){
     if(!ids || !ids.length){ toast('Nothing to mix yet.'); return; }
     if(ids.length < 2){ toast('Add a couple more songs to mix.'); return; }
@@ -1091,7 +1202,7 @@
       if(mixBtn) mixBtn.disabled = false;
     }
   }
- 
+
   // ---------------- Boot: auto-load anything saved from before ----------------
   (async function boot(){
     try{
@@ -1108,7 +1219,7 @@
       console.error('Auto-load failed', e);
     }
   })();
- 
+
   function restorePlaybackState(){
     const state = lastPlaybackState;
     if(!state || !state.trackId) return;
@@ -1116,7 +1227,7 @@
     if(!validQueue.length) return;
     const track = allTracks.find(t => t.id === state.trackId);
     if(!track) return;
- 
+
     queue = validQueue;
     queueIndex = validQueue.indexOf(state.trackId);
     if(queueIndex < 0) queueIndex = 0;
@@ -1125,7 +1236,7 @@
     repeatMode = state.repeatMode || 'off';
     $('shuffleBtn').classList.toggle('active', shuffle);
     $('repeatBtn').classList.toggle('active', repeatMode !== 'off');
- 
+
     const a = activeAudio();
     a.src = track.url;
     const resumeAt = state.currentTime || 0;
@@ -1136,7 +1247,7 @@
       $('totalTime').textContent = fmtTime(a.duration || 0);
       a.removeEventListener('loadedmetadata', onMeta);
     }, { once: true });
- 
+
     // Paused on purpose — mobile browsers block autoplay without a tap anyway.
     $('nowPlaying').style.display = 'flex';
     $('npTitle').textContent = track.name;
@@ -1145,11 +1256,11 @@
     highlightPlaying(track.id);
     updateMediaSession(track);
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
- 
+
     $('playPauseBtn').classList.add('pulse-cue');
     toast(`Tap play to pick back up on "${track.name}"`, 3500);
   }
- 
+
   // ---------------- PWA: register service worker so this can be installed ----------------
   // Only matters once these files are hosted online (https) — a plain
   // downloaded/local file won't trigger an install prompt, that's an OS-level
@@ -1159,9 +1270,8 @@
       navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration skipped:', err));
     });
   }
- 
+
 })();
 </script>
 </body>
 </html>
- 
