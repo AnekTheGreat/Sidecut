@@ -2,7 +2,7 @@
   "name": "Sidecut",
   "short_name": "Sidecut",
   "description": "Your files, your player — no ads, ever.",
-  "start_url": "./local-player.html",
+  "start_url": "./Sidecutv10.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
