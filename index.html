@@ -108,13 +108,17 @@
     50%{ box-shadow: inset 3px 0 0 var(--coral), 0 0 22px rgba(255,111,89,0.45); }
   }
   .track.playing .track-info .t{ color: var(--coral); }
-  .track.dragging{
-    background: var(--bg-raised);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    z-index: 20; position: relative; border-radius: 10px;
+  .genre-tag{
+    font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--gold);
+    border:1px solid var(--gold); border-radius:8px; padding:1px 6px; flex-shrink:0;
   }
-  #npInfo{ cursor:pointer; }
-  #npInfo .lyricsHint{ font-size:10px; color:var(--gold); font-family:'JetBrains Mono',monospace; }
+  .reorder-btns{ display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+  .reorder-btns button{
+    background:none; border:1px solid var(--line); color:var(--ink-dim);
+    width:22px; height:18px; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .reorder-btns button:disabled{ opacity:0.3; }
+  .reorder-btns svg{ width:12px; height:12px; }
   .track-info{ flex:1; min-width:0; }
   .track-info .t{ font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .track-info .a{ font-size:12px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -235,7 +239,7 @@
 <div id="nowPlaying">
   <div class="np-row">
     <div class="disc" id="npDisc"></div>
-    <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div><div class="lyricsHint" id="npLyricsHint"></div></div>
+    <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div></div>
     <div id="npControls">
       <button id="shuffleBtn" title="Shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.83 13.41l1.41-1.41 3.83 3.83-3.83 3.83-1.41-1.41 1.42-1.42H14a3 3 0 01-2.24-1l-3.28-3.65A1 1 0 007.76 13H3v-2h4.76a3 3 0 012.24 1l3.28 3.65a1 1 0 00.72.35h2.24l-1.42-1.42zM14.83 4.59L16.24 3.18 20.07 7l-3.83 3.83-1.41-1.41L16.24 8H14a1 1 0 00-.72.35L11.15 10.6 9.7 9.03l1.83-2.03a3 3 0 012.24-1h2.24l-1.42-1.41zM3 7h2.76a3 3 0 012.24 1l.7.78-1.45 1.57-.7-.78a1 1 0 00-.72-.35H3z"/></svg></button>
       <button id="prevBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
@@ -280,20 +284,6 @@
   </div>
 </div>
 
-<!-- Lyrics modal -->
-<div class="modal-backdrop" id="lyricsBackdrop">
-  <div class="modal">
-    <h3 id="lyricsModalTitle">Lyrics</h3>
-    <textarea id="lyricsTextarea" rows="10" placeholder="Paste or type lyrics/notes for this song…"
-      style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink);
-      border-radius:8px; padding:11px 12px; font-size:13.5px; font-family:'Inter',sans-serif; resize:vertical;"></textarea>
-    <div class="modal-btns">
-      <button class="cancel" id="lyricsCancel">Cancel</button>
-      <button class="confirm" id="lyricsSave">Save</button>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
@@ -313,7 +303,8 @@
   let searchQuery = '';    // live search filter, lowercase
   let playlists = { 'All Songs': [] }; // name -> array of track ids
   let activePlaylist = 'All Songs';
-  let currentSort = 'default'; // default | alpha | artist | recent
+  let currentSort = 'default'; // default | alpha | artist | genre | recent
+  let editMode = false;
   let queue = [];          // track ids, current playback order
   let queueIndex = -1;
   let shuffle = false;
@@ -418,7 +409,7 @@
     allTracks = trackRows.map(r => ({
       id: r.id, file: r.blob, name: r.name, artist: r.artist,
       url: URL.createObjectURL(r.blob), duration: r.duration || null, bpm: r.bpm ?? null,
-      lyrics: r.lyrics || '',
+      genre: r.genre || null,
     }));
     playlists = metaMap.playlists || { 'All Songs': allTracks.map(t => t.id) };
     idCounter = metaMap.idCounter || allTracks.length;
@@ -441,6 +432,58 @@
     return { artist: 'Unknown artist', title: base };
   }
 
+  // ---------------- Automatic genre detection (reads embedded ID3 tags) ----------------
+  const ID3V1_GENRES = ['Blues','Classic Rock','Country','Dance','Disco','Funk','Grunge','Hip-Hop','Jazz','Metal',
+    'New Age','Oldies','Other','Pop','R&B','Rap','Reggae','Rock','Techno','Industrial','Alternative','Ska',
+    'Death Metal','Pranks','Soundtrack','Euro-Techno','Ambient','Trip-Hop','Vocal','Jazz+Funk','Fusion','Trance',
+    'Classical','Instrumental','Acid','House','Game','Sound Clip','Gospel','Noise','AlternRock','Bass','Soul',
+    'Punk','Space','Meditative','Instrumental Pop','Instrumental Rock','Ethnic','Gothic','Darkwave',
+    'Techno-Industrial','Electronic','Pop-Folk','Eurodance','Dream','Southern Rock','Comedy','Cult','Gangsta',
+    'Top 40','Christian Rap','Pop/Funk','Jungle','Native US','Cabaret','New Wave','Psychedelic','Rave','Showtunes',
+    'Trailer','Lo-Fi','Tribal','Acid Punk','Acid Jazz','Polka','Retro','Musical','Rock & Roll','Hard Rock'];
+
+  async function extractGenre(track){
+    try{
+      const buf = await track.file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+
+      // ID3v2 tag at the start of the file (most common in modern MP3s)
+      if(bytes.length > 10 && bytes[0]===0x49 && bytes[1]===0x44 && bytes[2]===0x33){
+        const tagSize = ((bytes[6]&0x7f)<<21)|((bytes[7]&0x7f)<<14)|((bytes[8]&0x7f)<<7)|(bytes[9]&0x7f);
+        let offset = 10;
+        const end = Math.min(10+tagSize, bytes.length);
+        while(offset < end - 10){
+          const frameId = String.fromCharCode(bytes[offset],bytes[offset+1],bytes[offset+2],bytes[offset+3]);
+          if(!/^[A-Z0-9]{3,4}$/.test(frameId)) break;
+          const frameSize = (bytes[offset+4]<<24)|(bytes[offset+5]<<16)|(bytes[offset+6]<<8)|bytes[offset+7];
+          if(frameSize <= 0 || offset+10+frameSize > bytes.length) break;
+          if(frameId === 'TCON'){
+            const encoding = bytes[offset+10];
+            const content = bytes.slice(offset+11, offset+10+frameSize);
+            let text;
+            if(encoding === 1 || encoding === 2) text = new TextDecoder('utf-16').decode(content);
+            else if(encoding === 3) text = new TextDecoder('utf-8').decode(content);
+            else text = new TextDecoder('iso-8859-1').decode(content);
+            text = text.replace(/\u0000/g,'').trim();
+            const numMatch = text.match(/^\(?(\d+)\)?$/);
+            if(numMatch) return ID3V1_GENRES[parseInt(numMatch[1],10)] || text || null;
+            return text || null;
+          }
+          offset += 10 + frameSize;
+        }
+      }
+
+      // Fallback: ID3v1 tag in the last 128 bytes (older MP3s)
+      if(bytes.length > 128){
+        const tagStart = bytes.length - 128;
+        if(bytes[tagStart]===0x54 && bytes[tagStart+1]===0x41 && bytes[tagStart+2]===0x47){
+          return ID3V1_GENRES[bytes[bytes.length-1]] || null;
+        }
+      }
+    }catch(e){ /* not every file has readable tags — that's fine, just skip */ }
+    return null;
+  }
+
   // ---------------- File handling ----------------
   function handleFiles(fileList){
     const added = [];
@@ -449,11 +492,11 @@
       const meta = guessMeta(file.name);
       const id = 't' + (idCounter++);
       const url = URL.createObjectURL(file);
-      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, lyrics: '' };
+      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, genre: null };
       allTracks.push(track);
       playlists['All Songs'].push(id);
       added.push(track);
-      dbPut('tracks', { id, blob: file, name: meta.title, artist: meta.artist, duration: null, bpm: null, lyrics: '' });
+      dbPut('tracks', { id, blob: file, name: meta.title, artist: meta.artist, duration: null, bpm: null, genre: null });
     });
     if(added.length){
       saveMeta();
@@ -469,7 +512,14 @@
         a.src = t.url;
         a.addEventListener('loadedmetadata', () => {
           t.duration = a.duration;
-          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration });
+          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, genre: t.genre });
+          renderList();
+        });
+        // Read genre from embedded ID3 tags automatically, no user action needed
+        extractGenre(t).then(g => {
+          if(!g) return;
+          t.genre = g;
+          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, genre: t.genre });
           renderList();
         });
       });
@@ -504,7 +554,7 @@
       const el = document.createElement('div');
       el.className = 'tab' + (name === activePlaylist ? ' active' : '');
       el.textContent = name;
-      el.addEventListener('click', () => { activePlaylist = name; renderTabs(); renderList(); });
+      el.addEventListener('click', () => { activePlaylist = name; editMode = false; renderTabs(); renderList(); });
       tabs.appendChild(el);
     });
     const newTab = document.createElement('div');
@@ -541,6 +591,12 @@
       arr.sort((a,b) => (allTracks.find(t=>t.id===a)?.name||'').localeCompare(allTracks.find(t=>t.id===b)?.name||''));
     } else if(currentSort === 'artist'){
       arr.sort((a,b) => (allTracks.find(t=>t.id===a)?.artist||'').localeCompare(allTracks.find(t=>t.id===b)?.artist||''));
+    } else if(currentSort === 'genre'){
+      arr.sort((a,b) => {
+        const ga = allTracks.find(t=>t.id===a)?.genre || 'zzz_Unknown';
+        const gb = allTracks.find(t=>t.id===b)?.genre || 'zzz_Unknown';
+        return ga.localeCompare(gb);
+      });
     } else if(currentSort === 'recent'){
       arr.reverse();
     }
@@ -574,10 +630,12 @@
           <option value="default">Playlist order</option>
           <option value="alpha">A–Z</option>
           <option value="artist">By artist</option>
+          <option value="genre">By genre</option>
           <option value="recent">Recently added</option>
         </select>
         <button class="icon-btn" id="mixBtn" title="Mix this playlist"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.83 13.41l1.41-1.41 3.83 3.83-3.83 3.83-1.41-1.41 1.42-1.42H14a3 3 0 01-2.24-1l-3.28-3.65A1 1 0 007.76 13H3v-2h4.76a3 3 0 012.24 1l3.28 3.65a1 1 0 00.72.35h2.24l-1.42-1.42zM14.83 4.59L16.24 3.18 20.07 7l-3.83 3.83-1.41-1.41L16.24 8H14a1 1 0 00-.72.35L11.15 10.6 9.7 9.03l1.83-2.03a3 3 0 012.24-1h2.24l-1.42-1.41zM3 7h2.76a3 3 0 012.24 1l.7.78-1.45 1.57-.7-.78a1 1 0 00-.72-.35H3z"/></svg></button>
         <button class="icon-btn" id="exportBtn" title="${isAllSongs ? 'Export library' : 'Export list'}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h4.17v6h4V9h4.17L12 2z"/></svg></button>
+        ${!isAllSongs ? `<button class="icon-btn" id="editModeBtn" title="Reorder tracks" style="${editMode ? 'background:var(--coral); color:#161616; border-color:var(--coral);' : ''}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : ''}
         ${!isAllSongs ? `<button class="icon-btn" id="deletePlaylistBtn" title="Delete playlist"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
       </div>
     `;
@@ -587,6 +645,14 @@
     $('mixBtn').addEventListener('click', () => startMix(ids));
     $('exportBtn').addEventListener('click', () => isAllSongs ? exportLibrary() : exportPlaylist());
     if(!isAllSongs) $('deletePlaylistBtn').addEventListener('click', deleteActivePlaylist);
+    if(!isAllSongs) $('editModeBtn').addEventListener('click', () => {
+      if(!editMode && currentSort !== 'default'){
+        currentSort = 'default';
+        toast('Switched to "Playlist order" to reorder');
+      }
+      editMode = !editMode;
+      renderList();
+    });
 
     if(!ids.length){
       const empty = document.createElement('div');
@@ -609,11 +675,11 @@
           <div class="a">${escapeHtml(t.artist)}</div>
         </div>
         <div class="dur">${t.duration ? fmtTime(t.duration) : '--:--'}</div>
+        ${t.genre ? `<div class="genre-tag">${escapeHtml(t.genre)}</div>` : ''}
         ${!isAllSongs ? `<button class="remove" data-remove="${id}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg></button>` : ''}
       `;
       row.addEventListener('click', (e) => {
-        if(e.target.closest('.remove')) return;
-        if(row.dataset.justDragged) { delete row.dataset.justDragged; return; }
+        if(e.target.closest('.remove') || e.target.closest('.reorder-btns')) return;
         playFromList(ids, id);
       });
       pane.appendChild(row);
@@ -623,7 +689,17 @@
           saveMeta();
           renderList();
         });
-        if(currentSort === 'default') attachDragReorder(row);
+        if(editMode && currentSort === 'default'){
+          const btns = document.createElement('div');
+          btns.className = 'reorder-btns';
+          btns.innerHTML = `
+            <button data-move="up" ${i===0?'disabled':''}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8l-6 6h12z"/></svg></button>
+            <button data-move="down" ${i===ids.length-1?'disabled':''}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l6-6H6z"/></svg></button>
+          `;
+          btns.querySelector('[data-move="up"]').addEventListener('click', (e) => { e.stopPropagation(); moveTrack(id, -1); });
+          btns.querySelector('[data-move="down"]').addEventListener('click', (e) => { e.stopPropagation(); moveTrack(id, 1); });
+          row.appendChild(btns);
+        }
       }
     });
 
@@ -653,67 +729,15 @@
     }
   }
 
-  // ---------------- Long-press drag-to-reorder (custom playlists only) ----------------
-  function attachDragReorder(row){
-    let longPressTimer = null;
-    let dragging = false;
-    let startX = 0, startY = 0;
-
-    row.addEventListener('pointerdown', (e) => {
-      if(e.target.closest('.remove')) return;
-      startX = e.clientX; startY = e.clientY;
-      longPressTimer = setTimeout(() => beginDrag(e), 420);
-      row.addEventListener('pointermove', cancelIfMoved);
-      row.addEventListener('pointerup', clearPress, { once:true });
-    });
-
-    function cancelIfMoved(ev){
-      if(dragging) return;
-      if(Math.abs(ev.clientX-startX) > 8 || Math.abs(ev.clientY-startY) > 8) clearPress();
-    }
-    function clearPress(){
-      clearTimeout(longPressTimer);
-      row.removeEventListener('pointermove', cancelIfMoved);
-    }
-
-    function beginDrag(e){
-      dragging = true;
-      row.classList.add('dragging');
-      row.setPointerCapture(e.pointerId);
-      if(navigator.vibrate) navigator.vibrate(15);
-
-      function onMove(ev){
-        const siblings = Array.from(row.parentElement.querySelectorAll('.track'));
-        const rowIndex = siblings.indexOf(row);
-        for(const sib of siblings){
-          if(sib === row) continue;
-          const rect = sib.getBoundingClientRect();
-          const mid = rect.top + rect.height/2;
-          const sibIndex = siblings.indexOf(sib);
-          if(ev.clientY > mid && sibIndex > rowIndex){
-            row.parentElement.insertBefore(row, sib.nextSibling);
-            break;
-          } else if(ev.clientY < mid && sibIndex < rowIndex){
-            row.parentElement.insertBefore(row, sib);
-            break;
-          }
-        }
-      }
-      function onUp(ev){
-        dragging = false;
-        row.classList.remove('dragging');
-        row.releasePointerCapture(ev.pointerId);
-        row.removeEventListener('pointermove', onMove);
-        row.removeEventListener('pointerup', onUp);
-        row.dataset.justDragged = '1';
-        const newIds = Array.from(row.parentElement.querySelectorAll('.track')).map(r => r.dataset.id);
-        playlists[activePlaylist] = newIds;
-        saveMeta();
-        renderList();
-      }
-      row.addEventListener('pointermove', onMove);
-      row.addEventListener('pointerup', onUp);
-    }
+  function moveTrack(id, dir){
+    const arr = playlists[activePlaylist];
+    if(!arr) return;
+    const idx = arr.indexOf(id);
+    const newIdx = idx + dir;
+    if(idx < 0 || newIdx < 0 || newIdx >= arr.length) return;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    saveMeta();
+    renderList();
   }
 
   function deleteTrack(id){
@@ -909,33 +933,9 @@
     $('npArtist').textContent = t.artist;
     $('npDisc').classList.add('spinning');
     $('mixBadge').style.display = isMixMode ? 'inline-block' : 'none';
-    $('npLyricsHint').textContent = t.lyrics ? '📝 Lyrics' : 'Tap for lyrics';
     highlightPlaying(t.id);
     updateMediaSession(t);
   }
-
-  // ---------------- Lyrics ----------------
-  $('npInfo').addEventListener('click', () => {
-    if(queueIndex < 0 || queueIndex >= queue.length) return;
-    const t = allTracks.find(tr => tr.id === queue[queueIndex]);
-    if(!t) return;
-    $('lyricsModalTitle').textContent = `Lyrics — ${t.name}`;
-    $('lyricsTextarea').value = t.lyrics || '';
-    $('lyricsTextarea').dataset.trackId = t.id;
-    $('lyricsBackdrop').style.display = 'flex';
-  });
-  $('lyricsCancel').addEventListener('click', () => { $('lyricsBackdrop').style.display = 'none'; });
-  $('lyricsBackdrop').addEventListener('click', e => { if(e.target === $('lyricsBackdrop')) $('lyricsBackdrop').style.display = 'none'; });
-  $('lyricsSave').addEventListener('click', () => {
-    const id = $('lyricsTextarea').dataset.trackId;
-    const t = allTracks.find(tr => tr.id === id);
-    if(!t) return;
-    t.lyrics = $('lyricsTextarea').value;
-    dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, lyrics: t.lyrics });
-    $('npLyricsHint').textContent = t.lyrics ? '📝 Lyrics' : 'Tap for lyrics';
-    $('lyricsBackdrop').style.display = 'none';
-    toast('Lyrics saved');
-  });
 
   function updateMediaSession(t){
     if(!('mediaSession' in navigator)) return;
