@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SideCut — your files, your player</title>
+<title>Sidecut — your files, your player</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E1B1F">
 <link rel="icon" href="icon-192.png">
@@ -181,6 +181,8 @@
   #speedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
   #nowPlaying .disc{ width:54px; height:54px; border-width:5px; flex-shrink:0; cursor:pointer; }
+  #nowPlaying .disc.has-art{ background-size:cover; background-position:center; border-color:rgba(255,255,255,0.15); }
+  #nowPlaying .disc.has-art::after{ display:none; }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
   #nowPlaying .disc::after{ width:8px; height:8px; }
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
@@ -377,6 +379,14 @@
       </div>
       <button class="playlist-pick-btn" id="applyCustomTheme" style="margin-top:12px; text-align:center;">Apply custom theme</button>
     </div>
+    <div style="border-top:1px solid var(--line); margin-top:6px; padding-top:14px;">
+      <h3 style="font-size:15px; margin-bottom:10px;">Playback</h3>
+      <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--ink-dim); margin-bottom:6px;">
+        <span>Crossfade length</span><span id="crossfadeValue">6s</span>
+      </div>
+      <input type="range" id="crossfadeSlider" min="0" max="12" step="1" value="6" style="width:100%;">
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:4px;">0s turns crossfading off — tracks cut cleanly instead of blending.</div>
+    </div>
     <div class="modal-btns">
       <button class="cancel" id="themeCancel" style="flex:1;">Close</button>
     </div>
@@ -500,6 +510,11 @@
     renderThemeOptions();
     toast('Custom theme applied');
   });
+  $('crossfadeSlider').addEventListener('input', (e) => {
+    crossfadeSeconds = parseInt(e.target.value, 10);
+    $('crossfadeValue').textContent = crossfadeSeconds + 's';
+    dbPut('meta', { key: 'crossfadeSeconds', value: crossfadeSeconds });
+  });
 
   async function loadSavedTheme(){
     try{
@@ -514,12 +529,18 @@
       }
       const themeRow = metaRows.find(r => r.key === 'theme');
       if(themeRow && THEMES[themeRow.value]) applyTheme(themeRow.value);
-    }catch(e){ /* default theme is fine */ }
+      const crossfadeRow = metaRows.find(r => r.key === 'crossfadeSeconds');
+      if(crossfadeRow && typeof crossfadeRow.value === 'number'){
+        crossfadeSeconds = crossfadeRow.value;
+        $('crossfadeSlider').value = crossfadeSeconds;
+        $('crossfadeValue').textContent = crossfadeSeconds + 's';
+      }
+    }catch(e){ /* defaults are fine */ }
   }
   let idCounter = 0;
   let isMixMode = false;
   let lastPlaybackState = null;
-  const CROSSFADE_SECONDS = 6;
+  let crossfadeSeconds = 6;
   let crossfadeTriggered = false;
   let crossfadeRAF = null;
   let pendingNextIndex = null;
@@ -530,6 +551,56 @@
   let activeIdx = 0;
   function activeAudio(){ return audios[activeIdx]; }
   function inactiveAudio(){ return audios[1-activeIdx]; }
+
+  // ---------------- Volume normalization (Web Audio API gain graph) ----------------
+  // Routes both <audio> elements through their own GainNode so per-track loudness
+  // can be evened out without touching the shared crossfade volume logic.
+  let audioCtx = null;
+  const gainNodes = [null, null];
+  function ensureAudioGraph(){
+    if(audioCtx) return;
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audios.forEach((el, idx) => {
+        const src = audioCtx.createMediaElementSource(el);
+        const gain = audioCtx.createGain();
+        src.connect(gain).connect(audioCtx.destination);
+        gainNodes[idx] = gain;
+      });
+    }catch(e){ console.warn('Audio graph setup failed, normalization disabled', e); }
+  }
+  function applyNormalizedGain(t, audioIdx){
+    ensureAudioGraph();
+    const gainNode = gainNodes[audioIdx];
+    if(!gainNode) return;
+    gainNode.gain.value = t.gain != null ? t.gain : 1;
+    if(t.gain == null){
+      estimateGain(t).then(g => {
+        if(g == null) return;
+        t.gain = g;
+        persistTrackMeta(t);
+        // Only apply live if this exact track is still the one loaded on this audio element
+        if(queue[queueIndex] === t.id && audioIdx === activeIdx) gainNode.gain.value = g;
+      });
+    }
+  }
+  async function estimateGain(track){
+    try{
+      const resp = await fetch(track.url);
+      const arrBuf = await resp.arrayBuffer();
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      let audioBuffer;
+      try{ audioBuffer = await ctx.decodeAudioData(arrBuf); } finally { ctx.close(); }
+      const data = audioBuffer.getChannelData(0);
+      const step = Math.max(1, Math.floor(data.length / 200000)); // sample down for speed
+      let sumSquares = 0, count = 0;
+      for(let i=0;i<data.length;i+=step){ sumSquares += data[i]*data[i]; count++; }
+      const rms = Math.sqrt(sumSquares / count);
+      const targetRMS = 0.15;
+      let gain = rms > 0.0001 ? targetRMS / rms : 1;
+      return Math.max(0.5, Math.min(2.5, gain)); // clamp to avoid silence or clipping
+    }catch(e){ return null; }
+  }
 
   // ---------------- Persistence (IndexedDB) ----------------
   const DB_NAME = 'sidecut_local_db';
@@ -590,6 +661,17 @@
     dbPut('meta', { key: 'idCounter', value: idCounter });
   }
 
+  // Single source of truth for what gets written to the tracks store —
+  // every field we track per-song funnels through here so nothing gets
+  // silently dropped when one code path forgets a field another path added.
+  function persistTrackMeta(t){
+    dbPut('tracks', {
+      id: t.id, blob: t.file, name: t.name, artist: t.artist,
+      duration: t.duration, bpm: t.bpm, genre: t.genre,
+      gain: t.gain ?? null, art: t.artBlob || null,
+    });
+  }
+
   let lastStateSave = 0;
   function savePlaybackState(force){
     const now = Date.now();
@@ -616,7 +698,8 @@
     allTracks = trackRows.map(r => ({
       id: r.id, file: r.blob, name: r.name, artist: r.artist,
       url: URL.createObjectURL(r.blob), duration: r.duration || null, bpm: r.bpm ?? null,
-      genre: r.genre || null,
+      genre: r.genre || null, gain: r.gain ?? null,
+      artBlob: r.art || null, artUrl: r.art ? URL.createObjectURL(r.art) : null,
     }));
     playlists = metaMap.playlists || { 'All Songs': allTracks.map(t => t.id) };
     if(!playlists['Favorites']) playlists['Favorites'] = [];
@@ -655,7 +738,30 @@
     'Top 40','Christian Rap','Pop/Funk','Jungle','Native US','Cabaret','New Wave','Psychedelic','Rave','Showtunes',
     'Trailer','Lo-Fi','Tribal','Acid Punk','Acid Jazz','Polka','Retro','Musical','Rock & Roll','Hard Rock'];
 
-  async function extractGenre(track){
+  function parseAPIC(content){
+    try{
+      const encoding = content[0];
+      let offset = 1;
+      let mimeEnd = offset;
+      while(mimeEnd < content.length && content[mimeEnd] !== 0) mimeEnd++;
+      const mime = new TextDecoder('iso-8859-1').decode(content.slice(offset, mimeEnd));
+      offset = mimeEnd + 1;
+      offset += 1; // picture type byte
+      if(encoding === 1 || encoding === 2){
+        while(offset < content.length-1 && !(content[offset]===0 && content[offset+1]===0)) offset += 2;
+        offset += 2;
+      } else {
+        while(offset < content.length && content[offset] !== 0) offset++;
+        offset += 1;
+      }
+      const imgBytes = content.slice(offset);
+      if(!mime || imgBytes.length < 100) return null; // real cover art is never this small
+      return new Blob([imgBytes], { type: mime.startsWith('image/') ? mime : 'image/jpeg' });
+    }catch(e){ return null; }
+  }
+
+  async function extractTags(track){
+    const result = { genre: null, artBlob: null };
     try{
       const buf = await track.file.arrayBuffer();
       const bytes = new Uint8Array(buf);
@@ -674,7 +780,7 @@
             ? ((bytes[offset+4]&0x7f)<<21)|((bytes[offset+5]&0x7f)<<14)|((bytes[offset+6]&0x7f)<<7)|(bytes[offset+7]&0x7f)
             : (bytes[offset+4]<<24)|(bytes[offset+5]<<16)|(bytes[offset+6]<<8)|bytes[offset+7];
           if(frameSize <= 0 || offset+10+frameSize > bytes.length) break;
-          if(frameId === 'TCON'){
+          if(frameId === 'TCON' && !result.genre){
             const encoding = bytes[offset+10];
             const content = bytes.slice(offset+11, offset+10+frameSize);
             let text;
@@ -682,26 +788,28 @@
             else if(encoding === 3) text = new TextDecoder('utf-8').decode(content);
             else text = new TextDecoder('iso-8859-1').decode(content);
             text = text.replace(/\u0000/g,'').trim();
-            // Sanity check: real genre text is short and printable — anything else means we
-            // likely misread the frame boundary, so bail rather than show garbage.
-            if(!text || text.length > 40 || /[\x00-\x08\x0E-\x1F]/.test(text)) return null;
-            const numMatch = text.match(/^\(?(\d+)\)?$/);
-            if(numMatch) return ID3V1_GENRES[parseInt(numMatch[1],10)] || text || null;
-            return text;
+            if(text && text.length <= 40 && !/[\x00-\x08\x0E-\x1F]/.test(text)){
+              const numMatch = text.match(/^\(?(\d+)\)?$/);
+              result.genre = numMatch ? (ID3V1_GENRES[parseInt(numMatch[1],10)] || text) : text;
+            }
+          } else if(frameId === 'APIC' && !result.artBlob){
+            const content = bytes.slice(offset+10, offset+10+frameSize);
+            result.artBlob = parseAPIC(content);
           }
           offset += 10 + frameSize;
+          if(result.genre && result.artBlob) break;
         }
       }
 
-      // Fallback: ID3v1 tag in the last 128 bytes (older MP3s)
-      if(bytes.length > 128){
+      // Fallback: ID3v1 tag in the last 128 bytes (older MP3s, genre only)
+      if(!result.genre && bytes.length > 128){
         const tagStart = bytes.length - 128;
         if(bytes[tagStart]===0x54 && bytes[tagStart+1]===0x41 && bytes[tagStart+2]===0x47){
-          return ID3V1_GENRES[bytes[bytes.length-1]] || null;
+          result.genre = ID3V1_GENRES[bytes[bytes.length-1]] || null;
         }
       }
     }catch(e){ /* not every file has readable tags — that's fine, just skip */ }
-    return null;
+    return result;
   }
 
   // ---------------- File handling ----------------
@@ -719,11 +827,11 @@
       seenKeys.add(key);
       const id = 't' + (idCounter++);
       const url = URL.createObjectURL(file);
-      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, genre: null };
+      const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, genre: null, gain: null, artBlob: null, artUrl: null };
       allTracks.push(track);
       playlists['All Songs'].push(id);
       added.push(track);
-      dbPut('tracks', { id, blob: file, name: meta.title, artist: meta.artist, duration: null, bpm: null, genre: null });
+      persistTrackMeta(track);
     });
     if(added.length){
       saveMeta();
@@ -741,15 +849,18 @@
         a.src = t.url;
         a.addEventListener('loadedmetadata', () => {
           t.duration = a.duration;
-          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, genre: t.genre });
+          persistTrackMeta(t);
           renderList();
         });
-        // Read genre from embedded ID3 tags automatically, no user action needed
-        extractGenre(t).then(g => {
-          if(!g) return;
-          t.genre = g;
-          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm, genre: t.genre });
+        // Read genre + embedded album art automatically, no user action needed
+        extractTags(t).then(({ genre, artBlob }) => {
+          let changed = false;
+          if(genre){ t.genre = genre; changed = true; }
+          if(artBlob){ t.artBlob = artBlob; t.artUrl = URL.createObjectURL(artBlob); changed = true; }
+          if(!changed) return;
+          persistTrackMeta(t);
           renderList();
+          if(queue[queueIndex] === t.id) updateNowPlayingArt(t);
         });
       });
     } else if(skippedDup){
@@ -800,7 +911,13 @@
       const el = document.createElement('div');
       el.className = 'tab' + (name === activePlaylist ? ' active' : '');
       el.textContent = name;
-      el.addEventListener('click', () => { activePlaylist = name; reorderMode = false; renderTabs(); renderList(); });
+      el.addEventListener('click', () => {
+        activePlaylist = name;
+        reorderMode = false;
+        if(shuffle) regenerateShuffleOrder();
+        renderTabs();
+        renderList();
+      });
       tabs.appendChild(el);
     });
     const newTab = document.createElement('div');
@@ -853,7 +970,16 @@
   function renderList(){
     const pane = $('listPane');
     const rawIds = playlists[activePlaylist] || [];
-    let ids = getSortedIds(rawIds);
+    let ids;
+    if(shuffle && shuffledOrderCache && shuffledOrderCache.playlist === activePlaylist){
+      // Keep only ids still actually in this playlist (in case something was removed/deleted)
+      const validSet = new Set(rawIds);
+      ids = shuffledOrderCache.ids.filter(id => validSet.has(id));
+      // Pick up anything added to the playlist since the shuffle was generated
+      rawIds.forEach(id => { if(!ids.includes(id)) ids.push(id); });
+    } else {
+      ids = getSortedIds(rawIds);
+    }
     if(searchQuery){
       ids = ids.filter(id => {
         const t = allTracks.find(tr => tr.id === id);
@@ -1324,9 +1450,9 @@
         if(!entry) continue;
         const blob = await entry.async('blob');
         const url = URL.createObjectURL(blob);
-        const track = { id: m.id, file: blob, name: m.name, artist: m.artist, url, duration: m.duration || null, bpm: m.bpm ?? null };
+        const track = { id: m.id, file: blob, name: m.name, artist: m.artist, url, duration: m.duration || null, bpm: m.bpm ?? null, genre: m.genre || null, gain: m.gain ?? null, artBlob: null, artUrl: null };
         allTracks.push(track);
-        dbPut('tracks', { id: m.id, blob, name: m.name, artist: m.artist, duration: m.duration || null, bpm: m.bpm ?? null });
+        persistTrackMeta(track);
         count++;
       }
       Object.keys(manifest.playlists || {}).forEach(name => {
@@ -1353,7 +1479,7 @@
   // ---------------- Playback (with crossfade) ----------------
   function playFromList(ids, startId){
     isMixMode = false;
-    queue = shuffle ? shuffleArray(ids.slice()) : ids.slice();
+    queue = ids.slice(); // ids already reflect the currently shown order (shuffled or sorted)
     queueIndex = queue.indexOf(startId);
     cancelCrossfade();
     playCurrent(true);
@@ -1366,6 +1492,14 @@
     return arr;
   }
 
+  // Keeps a persistent shuffled order per playlist so the visible list order
+  // stays put (doesn't reshuffle on every tap) until shuffle is turned off.
+  let shuffledOrderCache = null; // { playlist, ids }
+  function regenerateShuffleOrder(){
+    const base = playlists[activePlaylist] || [];
+    shuffledOrderCache = { playlist: activePlaylist, ids: shuffleArray(base.slice()) };
+  }
+
   function playCurrent(hardSwitch){
     if(queueIndex < 0 || queueIndex >= queue.length) return;
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
@@ -1376,7 +1510,8 @@
     a.currentTime = 0;
     a.volume = 1;
     a.playbackRate = playbackSpeed;
-    a.play().catch(()=>{});
+    applyNormalizedGain(t, activeIdx);
+    a.play().catch(() => recoverAudio(a, 'play() rejected'));
     crossfadeTriggered = false;
     updateNowPlayingUI(t);
     savePlaybackState(true);
@@ -1389,7 +1524,19 @@
     $('npDisc').classList.add('spinning');
     $('mixBadge').style.display = isMixMode ? 'inline-block' : 'none';
     highlightPlaying(t.id);
+    updateNowPlayingArt(t);
     updateMediaSession(t);
+  }
+
+  function updateNowPlayingArt(t){
+    const discEl = $('npDisc');
+    if(t.artUrl){
+      discEl.style.backgroundImage = `url("${t.artUrl}")`;
+      discEl.classList.add('has-art');
+    } else {
+      discEl.style.backgroundImage = '';
+      discEl.classList.remove('has-art');
+    }
   }
 
   function updateMediaSession(t){
@@ -1398,6 +1545,7 @@
       title: t.name,
       artist: t.artist,
       album: 'Sidecut',
+      artwork: t.artUrl ? [{ src: t.artUrl, sizes: '512x512', type: (t.artBlob && t.artBlob.type) || 'image/jpeg' }] : [],
     });
   }
 
@@ -1448,6 +1596,7 @@
     nxt.currentTime = 0;
     nxt.volume = 0;
     nxt.playbackRate = playbackSpeed;
+    applyNormalizedGain(nextTrack, 1-activeIdx);
     nxt.play().catch(()=>{});
     updateNowPlayingUI(nextTrack); // show the incoming track as it starts blending in, like Spotify does
 
@@ -1455,7 +1604,7 @@
     // the browser when the tab isn't visible (e.g. you switched to a game),
     // which would otherwise strand the fade mid-transition.
     const start = Date.now();
-    const durMs = CROSSFADE_SECONDS * 1000;
+    const durMs = crossfadeSeconds * 1000;
     crossfadeRAF = setInterval(() => {
       const p = Math.min(1, (Date.now() - start) / durMs);
       cur.volume = 1 - p;
@@ -1483,10 +1632,11 @@
     $('miniFill').style.width = pct + '%';
     $('curTime').textContent = fmtTime(a.currentTime);
     $('totalTime').textContent = fmtTime(a.duration);
+    $('npDisc').classList.toggle('spinning', !a.paused); // safety net: keep visual state in sync even if a play/pause event was missed
     savePlaybackState(false);
     if(repeatMode !== 'one'){
       const remaining = a.duration - a.currentTime;
-      if(remaining <= CROSSFADE_SECONDS && remaining > 0) maybeStartCrossfade();
+      if(crossfadeSeconds > 0 && remaining <= crossfadeSeconds && remaining > 0) maybeStartCrossfade();
     }
   }
   function onPlayEvt(e){
@@ -1502,6 +1652,24 @@
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     savePlaybackState(true);
   }
+  // Recreates a track's blob URL and retries playback — handles the case where
+  // Android reclaims memory while backgrounded and the old blob URL goes dead.
+  function recoverAudio(a, reason){
+    if(a !== activeAudio() || queueIndex < 0 || queueIndex >= queue.length) return;
+    const t = allTracks.find(tr => tr.id === queue[queueIndex]);
+    if(!t || !t.file) { toast('Playback error — could not recover this track'); return; }
+    console.warn('Recovering audio after', reason);
+    const resumeAt = a.currentTime || 0;
+    try{ URL.revokeObjectURL(t.url); }catch(e){}
+    t.url = URL.createObjectURL(t.file);
+    a.src = t.url;
+    a.addEventListener('loadedmetadata', function onMeta(){
+      a.currentTime = Math.min(resumeAt, a.duration || resumeAt);
+      a.removeEventListener('loadedmetadata', onMeta);
+    }, { once:true });
+    a.play().catch(() => { toast('Tap play to resume — playback was interrupted'); });
+  }
+
   function onEnded(e){
     const a = e.target;
     if(a !== activeAudio()) return;
@@ -1521,7 +1689,28 @@
     a.addEventListener('pause', onPauseEvt);
     a.addEventListener('timeupdate', onTimeUpdate);
     a.addEventListener('ended', onEnded);
+    a.addEventListener('error', () => recoverAudio(a, 'media error'));
+    a.addEventListener('stalled', () => recoverAudio(a, 'stalled'));
   });
+
+  // Watchdog: if we think we're playing but currentTime hasn't moved in a while,
+  // the audio silently died (dead blob URL, OS suspended it, etc). Recover it.
+  let lastWatchdogTime = -1;
+  let stuckTicks = 0;
+  setInterval(() => {
+    const a = activeAudio();
+    if(a.paused || !a.duration) { stuckTicks = 0; lastWatchdogTime = -1; return; }
+    if(a.currentTime === lastWatchdogTime){
+      stuckTicks++;
+      if(stuckTicks >= 3) { // ~6 seconds of no progress while "playing"
+        stuckTicks = 0;
+        recoverAudio(a, 'stalled progress');
+      }
+    } else {
+      stuckTicks = 0;
+    }
+    lastWatchdogTime = a.currentTime;
+  }, 2000);
 
   $('playPauseBtn').addEventListener('click', () => {
     $('playPauseBtn').classList.remove('pulse-cue');
@@ -1536,7 +1725,21 @@
   $('shuffleBtn').addEventListener('click', () => {
     shuffle = !shuffle;
     $('shuffleBtn').classList.toggle('active', shuffle);
-    toast(shuffle ? 'Shuffle on' : 'Shuffle off');
+    if(shuffle){
+      regenerateShuffleOrder();
+      // Resync the live queue to the new shuffled order without restarting the current song
+      if(queue.length && queueIndex >= 0){
+        const curId = queue[queueIndex];
+        queue = shuffledOrderCache.ids.slice();
+        const newIdx = queue.indexOf(curId);
+        queueIndex = newIdx >= 0 ? newIdx : 0;
+      }
+      toast('Shuffle on — list reordered');
+    } else {
+      shuffledOrderCache = null;
+      toast('Shuffle off — original order restored');
+    }
+    renderList();
     savePlaybackState(true);
   });
   $('repeatBtn').addEventListener('click', () => {
@@ -1712,7 +1915,7 @@
         if(t.bpm == null){
           toast(`Analyzing tempo ${i+1}/${tracks.length}…`, 1800);
           t.bpm = await estimateBPM(t).catch(() => null);
-          dbPut('tracks', { id: t.id, blob: t.file, name: t.name, artist: t.artist, duration: t.duration, bpm: t.bpm });
+          persistTrackMeta(t);
         }
       }
       const ordered = buildMixOrder(tracks);
@@ -1764,10 +1967,12 @@
     repeatMode = state.repeatMode || 'off';
     $('shuffleBtn').classList.toggle('active', shuffle);
     $('repeatBtn').classList.toggle('active', repeatMode !== 'off');
+    if(shuffle){ regenerateShuffleOrder(); renderList(); }
 
     const a = activeAudio();
     a.src = track.url;
     a.playbackRate = playbackSpeed;
+    applyNormalizedGain(track, activeIdx);
     const resumeAt = state.currentTime || 0;
     a.addEventListener('loadedmetadata', function onMeta(){
       a.currentTime = resumeAt;
@@ -1783,6 +1988,7 @@
     $('npArtist').textContent = track.artist;
     $('mixBadge').style.display = isMixMode ? 'inline-block' : 'none';
     highlightPlaying(track.id);
+    updateNowPlayingArt(track);
     updateMediaSession(track);
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
 
