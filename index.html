@@ -222,6 +222,29 @@
   .deck-track-name{ font-size:14.5px; font-weight:600; text-align:center; }
   .deck-track-artist{ font-size:11.5px; color:var(--ink-dim); text-align:center; }
 
+  .vu-meter{
+    width:100%; max-width:130px; height:7px; border-radius:4px; background:#0e0d0c;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.6); overflow:hidden; margin:2px 0;
+  }
+  .vu-fill{
+    height:100%; width:0%; border-radius:4px;
+    background: linear-gradient(90deg, #3fcf6e 0%, #3fcf6e 60%, #e8c53f 80%, #ff5a4e 100%);
+    transition: width 0.06s linear;
+  }
+  .kill-eq-row{ display:flex; justify-content:center; gap:10px; margin-top:14px; }
+  .kill-btn{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:1px;
+    padding:8px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);
+    background:#232220; color:var(--ink-dim); cursor:pointer;
+  }
+  .kill-btn.killed{ background:#5a1f1f; color:#ff8a7a; border-color:#7a2b2b; }
+  .hotcue-row{ display:flex; justify-content:center; gap:8px; margin-top:12px; }
+  .hotcue-btn{
+    width:52px; height:38px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);
+    background:#232220; color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-weight:700;
+    font-size:13px; cursor:pointer;
+  }
+  .hotcue-btn.set{ background: color-mix(in srgb, var(--gold) 30%, #232220); color:var(--gold); border-color:var(--gold); }
   .crossfader-wrap{ margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
   .crossfader-wrap label{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:#8a8577; }
   .crossfader-track{
@@ -353,9 +376,22 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-  #nowPlaying .disc{ width:54px; height:54px; border-width:2px; flex-shrink:0; cursor:pointer; }
+  #npPlayerBody{
+    position:relative; width:58px; height:58px; flex-shrink:0; border-radius:10px;
+    background: linear-gradient(155deg, #33302a, #1a1815 65%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;
+  }
+  #nowPlaying .disc{ width:44px; height:44px; border-width:1.5px; position:relative; }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
   #nowPlaying .disc::after{ width:5px; height:5px; }
+  #npMiniTonearm{
+    position:absolute; top:3px; right:2px; width:20px; height:2.5px; border-radius:2px;
+    background: linear-gradient(90deg, #cfc0a0, #9c8560); transform-origin: 88% 50%;
+    transform: rotate(-30deg); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:4;
+  }
+  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(8deg); }
+  #npMiniTonearm::after{ content:''; position:absolute; right:-3px; top:-3px; width:8px; height:8px; border-radius:50%; background:#8a7455; }
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
   #npInfo .t{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #npInfo .a{ font-size:11.5px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -498,7 +534,10 @@
 <div id="nowPlaying">
   <div id="miniBar"><div class="fill" id="miniFill"></div></div>
   <div class="np-row">
-    <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
+    <div id="npPlayerBody">
+      <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
+      <div id="npMiniTonearm"></div>
+    </div>
     <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div>
       <div class="name-bubble" id="nameBubble" style="display:none;">
         <div class="bt" id="bubbleTitle">—</div>
@@ -704,13 +743,21 @@
         <div class="deck-center-controls">
           <div class="deck-track-name" id="djTrackTitle">—</div>
           <div class="deck-track-artist" id="djTrackArtist">—</div>
+          <div class="vu-meter" id="vuMeter"><div class="vu-fill" id="vuFill"></div></div>
           <div class="deck-btn-row">
             <button class="deck-btn cue" id="djCueBtn">CUE</button>
             <button class="deck-btn play" id="djPlayPause">PLAY</button>
           </div>
           <div class="deck-btn-row">
             <button class="deck-btn" id="djSyncBtn" title="Snap pitch back to normal">SYNC</button>
-            <button class="deck-btn" id="djLoopBtn" title="Loop last 4 seconds">LOOP 4s</button>
+            <button class="deck-btn" id="djLoopBtn" title="Loop the last N seconds">LOOP</button>
+            <select id="loopLenSelect" class="deck-btn" style="padding:9px 6px;">
+              <option value="1">1s</option>
+              <option value="2">2s</option>
+              <option value="4" selected>4s</option>
+              <option value="8">8s</option>
+              <option value="16">16s</option>
+            </select>
           </div>
         </div>
 
@@ -723,6 +770,19 @@
         </div>
       </div>
 
+      <div class="kill-eq-row">
+        <button class="kill-btn" id="killHigh" data-band="treble">HI</button>
+        <button class="kill-btn" id="killMid" data-band="mid">MID</button>
+        <button class="kill-btn" id="killLow" data-band="bass">LOW</button>
+      </div>
+
+      <div class="hotcue-row" id="hotcueRow">
+        <button class="hotcue-btn" data-slot="0">1</button>
+        <button class="hotcue-btn" data-slot="1">2</button>
+        <button class="hotcue-btn" data-slot="2">3</button>
+        <button class="hotcue-btn" data-slot="3">4</button>
+      </div>
+
       <div class="crossfader-wrap">
         <label>CROSSFADE TO NEXT</label>
         <div class="crossfader-track" id="crossfaderTrack">
@@ -731,7 +791,7 @@
       </div>
     </div>
 
-    <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Grab the record to scratch — release to resume at pitch speed.</div>
+    <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Grab the record to scratch — release to resume at pitch speed. Tap a cue pad to set it, hold to jump back to it.</div>
     <div class="modal-btns">
       <button class="cancel" id="djModeClose" style="flex:1;">Exit DJ Mode</button>
     </div>
@@ -2323,6 +2383,7 @@
     $('curTime').textContent = fmtTime(a.currentTime);
     $('totalTime').textContent = fmtTime(a.duration);
     $('npDisc').classList.toggle('spinning', !a.paused); // safety net: keep visual state in sync even if a play/pause event was missed
+    $('npPlayerBody').classList.toggle('playing', !a.paused);
     savePlaybackState(false);
     if(repeatMode !== 'one'){
       const remaining = a.duration - a.currentTime;
@@ -2332,6 +2393,7 @@
   function onPlayEvt(e){
     if(e.target !== activeAudio()) return;
     $('npDisc').classList.add('spinning');
+    $('npPlayerBody').classList.add('playing');
     $('playIcon').innerHTML = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     if($('djModeBackdrop').style.display === 'flex') refreshDjMode();
@@ -2339,6 +2401,7 @@
   function onPauseEvt(e){
     if(e.target !== activeAudio()) return;
     $('npDisc').classList.remove('spinning');
+    $('npPlayerBody').classList.remove('playing');
     $('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     savePlaybackState(true);
@@ -2594,23 +2657,27 @@
   // ================================================================
   // ---------------- REAL SCRATCH / DJ TURNTABLE ENGINE ----------------
   // ================================================================
-  // Design: grabbing the platter pauses normal playback and hands control of
-  // currentTime directly to the finger (1:1 rotation -> seconds), same as a
-  // real vinyl. Releasing snaps playback back on at the current pitch speed,
-  // with a short "throw" (momentum) if you release mid-swipe fast, just like
-  // letting go of a spinning record.
+  // Design: grabbing the record grabs whichever <audio> is CURRENTLY active
+  // at grab-time and locks onto it for the whole gesture (doesn't re-check
+  // activeAudio() mid-drag, so a crossfade swap can't sever the connection).
+  // The CSS spin animation is explicitly paused (not just relying on the
+  // .spinning class) so our inline rotate() transform actually takes effect
+  // every frame instead of the animation engine fighting it. CurrentTime is
+  // driven 1:1 by finger rotation around the record center, exactly like a
+  // real vinyl. Releasing resumes playback (if it was playing) at whatever
+  // speed the pitch fader / playbackSpeed is currently set to.
   let isScratching = false;
-  let scratchAudio = null;         // which <audio> element is being scratched
-  let scratchStartAngle = 0;
+  let scratchAudio = null;          // the exact <audio> element locked in at grab-time
+  let scratchDiscEls = [];          // all disc elements to visually rotate together (mini + DJ, kept in sync)
   let scratchLastAngle = 0;
   let scratchLastTime = 0;
   let scratchWasPlaying = false;
-  let scratchAccum = 0;            // seconds of currentTime accumulated this drag
-  let scratchVelocityHistory = [];  // [{dt, dAngleDeg}] for throw/momentum on release
-  let scratchRotationDeg = 0;       // visual rotation applied on top of the CSS spin anim
+  let scratchAccum = 0;             // seconds of currentTime accumulated this drag
+  let scratchRotationDeg = 0;       // visual rotation applied on top of the (paused) CSS spin anim
+  let scratchRateResetTimer = null;
 
-  const PIXELS_TO_DEGREES = 0.6; // linear drag fallback sensitivity if not using angle-based math
-  const SECONDS_PER_360 = 1.8;   // how many seconds of audio one full platter rotation covers (~turntable feel)
+  const PIXELS_TO_DEGREES = 0.9;    // linear drag fallback sensitivity (mini disc, small target)
+  const SECONDS_PER_360 = 1.8;      // seconds of audio per full platter rotation — real-turntable-ish feel
 
   function angleFromCenter(el, clientX, clientY){
     const rect = el.getBoundingClientRect();
@@ -2618,43 +2685,50 @@
     const cy = rect.top + rect.height/2;
     return Math.atan2(clientY - cy, clientX - cx) * (180/Math.PI);
   }
-
   function shortestAngleDelta(a, b){
     let d = b - a;
     while(d > 180) d -= 360;
     while(d < -180) d += 360;
     return d;
   }
-
-  function beginScratch(el, clientX, clientY, useAngle){
-    if(queueIndex < 0 || queueIndex >= queue.length) return;
-    const a = activeAudio();
-    isScratching = true;
-    scratchAudio = a;
-    scratchWasPlaying = !a.paused;
-    a.pause();
-    if(useAngle){
-      scratchStartAngle = angleFromCenter(el, clientX, clientY);
-      scratchLastAngle = scratchStartAngle;
-    } else {
-      scratchLastAngle = clientX;
-    }
-    scratchLastTime = performance.now();
-    scratchAccum = a.currentTime;
-    scratchVelocityHistory = [];
-    scratchRotationDeg = 0;
-    el.classList.add('scratching');
-    if(navigator.vibrate) navigator.vibrate(6);
+  function setDiscRotation(deg){
+    scratchDiscEls.forEach(el => { if(el) el.style.transform = `rotate(${deg}deg)`; });
+  }
+  function clearDiscRotation(){
+    scratchDiscEls.forEach(el => { if(el) el.style.transform = ''; });
+  }
+  function pauseSpinAnimation(pause){
+    // Explicitly override the CSS animation-play-state instead of relying on
+    // the .spinning class toggle, so our inline transform always wins during a scratch.
+    scratchDiscEls.forEach(el => { if(el) el.style.animationPlayState = pause ? 'paused' : ''; });
   }
 
-  function moveScratch(el, clientX, clientY, useAngle){
-    if(!isScratching || scratchAudio !== activeAudio()) return;
+  function beginScratch(discEls, clientX, clientY, useAngle, refEl){
+    if(queueIndex < 0 || queueIndex >= queue.length) return;
+    const a = activeAudio(); // snapshot NOW and hold this reference for the whole gesture
+    isScratching = true;
+    scratchAudio = a;
+    scratchDiscEls = discEls;
+    scratchWasPlaying = !a.paused;
+    scratchLastAngle = useAngle ? angleFromCenter(refEl, clientX, clientY) : clientX;
+    scratchLastTime = performance.now();
+    scratchAccum = a.currentTime || 0;
+    scratchRotationDeg = 0;
+    pauseSpinAnimation(true);
+    setDiscRotation(0);
+    discEls.forEach(el => el && el.classList.add('scratching'));
+    if(navigator.vibrate) navigator.vibrate(6);
+    if(scratchRateResetTimer){ clearTimeout(scratchRateResetTimer); scratchRateResetTimer = null; }
+  }
+
+  function moveScratch(clientX, clientY, useAngle, refEl){
+    if(!isScratching || !scratchAudio) return;
     const now = performance.now();
     const dt = Math.max(1, now - scratchLastTime);
 
     let dAngle;
     if(useAngle){
-      const angle = angleFromCenter(el, clientX, clientY);
+      const angle = angleFromCenter(refEl, clientX, clientY);
       dAngle = shortestAngleDelta(scratchLastAngle, angle);
       scratchLastAngle = angle;
     } else {
@@ -2662,52 +2736,46 @@
       dAngle = dx * PIXELS_TO_DEGREES;
       scratchLastAngle = clientX;
     }
+    if(dAngle === 0) return;
 
     scratchRotationDeg += dAngle;
-    el.style.transform = `rotate(${scratchRotationDeg}deg)`;
+    setDiscRotation(scratchRotationDeg);
 
-    const dSeconds = (dAngle / 360) * SECONDS_PER_360;
-    scratchAccum = Math.max(0, Math.min(scratchAudio.duration || scratchAccum, scratchAccum + dSeconds));
-    scratchAudio.currentTime = scratchAccum;
+    const dur = scratchAudio.duration;
+    if(dur && isFinite(dur)){
+      const dSeconds = (dAngle / 360) * SECONDS_PER_360;
+      scratchAccum = Math.max(0, Math.min(dur - 0.02, scratchAccum + dSeconds));
+      try{ scratchAudio.currentTime = scratchAccum; }catch(e){}
 
-    // scratch "sound": bump playbackRate briefly in the drag direction so it
-    // audibly stutters like a real needle being dragged, not just a silent seek
-    const instVelocity = dAngle / dt; // deg per ms
-    const rate = Math.max(0.05, Math.min(4, 1 + instVelocity * 0.35));
-    try{ scratchAudio.playbackRate = rate; }catch(e){}
-    if(scratchAudio.paused) scratchAudio.play().catch(()=>{});
-
-    scratchVelocityHistory.push({ t: now, dAngle });
-    if(scratchVelocityHistory.length > 8) scratchVelocityHistory.shift();
-
-    scratchLastTime = now;
-
-    // live-update seek UI while scratching
-    if(scratchAudio.duration){
-      const pct = (scratchAccum / scratchAudio.duration) * 100;
+      const pct = (scratchAccum / dur) * 100;
       updateSeekDisplay(pct);
       $('curTime').textContent = fmtTime(scratchAccum);
     }
+
+    // Audible scratch: play a short burst at a rate derived from drag speed/direction —
+    // this is what makes it *sound* scratched instead of just a silent seek.
+    const instVelocity = dAngle / dt; // deg per ms
+    const rate = Math.max(0.08, Math.min(4, Math.abs(instVelocity) * 0.9 + 0.15));
+    try{
+      scratchAudio.playbackRate = rate;
+      scratchAudio.muted = false;
+      if(scratchAudio.paused) scratchAudio.play().catch(()=>{});
+    }catch(e){}
+
+    scratchLastTime = now;
   }
 
-  function endScratch(el){
+  function endScratch(){
     if(!isScratching) return;
     isScratching = false;
-    el.classList.remove('scratching');
-    el.style.transform = '';
-
-    // Compute release velocity for a short momentum "throw", like letting go of a real record
-    let releaseDegPerMs = 0;
-    if(scratchVelocityHistory.length){
-      const totalDt = scratchVelocityHistory.reduce((s,v)=>s+ (v.dAngle!==undefined?1:0),0);
-      const sumAngle = scratchVelocityHistory.reduce((s,v)=>s+v.dAngle,0);
-      const span = Math.max(1, scratchVelocityHistory.length * 16);
-      releaseDegPerMs = sumAngle / span;
-    }
+    scratchDiscEls.forEach(el => el && el.classList.remove('scratching'));
+    pauseSpinAnimation(false);
+    clearDiscRotation();
 
     const a = scratchAudio;
     if(a){
-      a.playbackRate = playbackSpeed;
+      const rate = (typeof playbackSpeedDJ === 'number' && $('djModeBackdrop').style.display === 'flex') ? playbackSpeedDJ : playbackSpeed;
+      a.playbackRate = rate;
       if(scratchWasPlaying){
         a.play().catch(()=>{});
       } else {
@@ -2715,33 +2783,36 @@
       }
     }
     scratchAudio = null;
-    scratchVelocityHistory = [];
+    scratchDiscEls = [];
   }
 
-  function attachScratch(discEl, useAngle){
-    discEl.addEventListener('pointerdown', (e) => {
+  function attachScratch(el, useAngle, syncEls){
+    // syncEls: other disc elements (e.g. mini + DJ platter) that should visually rotate together
+    el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      discEl.setPointerCapture(e.pointerId);
-      beginScratch(discEl, e.clientX, e.clientY, useAngle);
+      try{ el.setPointerCapture(e.pointerId); }catch(err){}
+      const discEls = [el, ...(syncEls||[])].filter(Boolean);
+      beginScratch(discEls, e.clientX, e.clientY, useAngle, el);
     });
-    discEl.addEventListener('pointermove', (e) => {
+    el.addEventListener('pointermove', (e) => {
       if(!isScratching) return;
       e.preventDefault();
-      moveScratch(discEl, e.clientX, e.clientY, useAngle);
+      moveScratch(e.clientX, e.clientY, useAngle, el);
     });
     function release(e){
       if(!isScratching) return;
-      try{ discEl.releasePointerCapture(e.pointerId); }catch(err){}
-      endScratch(discEl);
+      try{ el.releasePointerCapture(e.pointerId); }catch(err){}
+      endScratch();
     }
-    discEl.addEventListener('pointerup', release);
-    discEl.addEventListener('pointercancel', release);
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+    el.addEventListener('lostpointercapture', () => { if(isScratching) endScratch(); });
   }
-  // Mini disc in the now-playing bar: simple linear-drag scratch (small target, angle math overkill)
-  attachScratch($('npDisc'), false);
-  // Big DJ Mode platter: angle-based scratch (grab anywhere on the record, like a real turntable)
-  attachScratch($('djJog'), true);
-  attachScratch($('djDisc'), true);
+  // Mini disc in the now-playing bar: linear-drag scratch (small target, angle math is overkill here)
+  attachScratch($('npDisc'), false, []);
+  // Big DJ Mode platter: angle-based scratch, grab anywhere on the record — mirrors onto the mini disc too
+  attachScratch($('djJog'), true, [$('djDisc'), $('npDisc')]);
+  attachScratch($('djDisc'), true, [$('npDisc')]);
 
   // ---------------- DJ Mode: turntable rig wiring ----------------
   let pitchPercent = 0;     // -100..100, mapped to 0.5x..1.5x-ish like real pitch faders (+/-50% typical range on DJ decks, but keep it musical)
@@ -2753,9 +2824,26 @@
     return 1 + (p/100) * 0.2;
   }
 
+  let djLastTrackId = null;
   function refreshDjMode(){
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(!t) return;
+    if(t.id !== djLastTrackId){
+      // New track loaded into the deck — hot cues, kill switches, and the loop
+      // point are per-song in real DJ gear, so reset them on track change.
+      djLastTrackId = t.id;
+      hotCues = [null, null, null, null];
+      if(typeof refreshHotcueButtons === 'function') refreshHotcueButtons();
+      killState.bass = killState.mid = killState.treble = false;
+      if(killButtons.bass){
+        killButtons.bass.classList.remove('killed');
+        killButtons.mid.classList.remove('killed');
+        killButtons.treble.classList.remove('killed');
+      }
+      loopActive = false;
+      if($('djLoopBtn')) $('djLoopBtn').classList.remove('active');
+      djCuePoint = 0;
+    }
     $('djTrackTitle').textContent = t.name;
     $('djTrackArtist').textContent = t.artist;
     $('djDiscLabel').style.backgroundImage = t.artUrl ? `url("${t.artUrl}")` : '';
@@ -2799,26 +2887,115 @@
     applyPitch();
     toast('Pitch reset to normal speed');
   });
-  // LOOP 4s: simple manual loop of the last 4 seconds heard, toggled
+  // LOOP: manual loop of the last N seconds heard, length selectable, toggled
   let loopActive = false;
   let loopStart = 0;
+  let loopLen = 4;
+  $('loopLenSelect').addEventListener('change', (e) => { loopLen = parseFloat(e.target.value); });
   function loopWatcher(){
     if(!loopActive) return;
     const a = activeAudio();
-    if(a.currentTime >= loopStart + 4) a.currentTime = loopStart;
+    if(a.currentTime >= loopStart + loopLen) a.currentTime = loopStart;
     requestAnimationFrame(loopWatcher);
   }
   $('djLoopBtn').addEventListener('click', () => {
     loopActive = !loopActive;
     $('djLoopBtn').classList.toggle('active', loopActive);
     if(loopActive){
-      loopStart = Math.max(0, activeAudio().currentTime - 4);
-      toast('Looping last 4s');
+      loopStart = Math.max(0, activeAudio().currentTime - loopLen);
+      toast(`Looping last ${loopLen}s`);
       loopWatcher();
     } else {
       toast('Loop off');
     }
   });
+
+  // ---------------- Kill EQ (per-band mute, real DJ mixer behavior) ----------------
+  const killState = { bass: false, mid: false, treble: false };
+  const killButtons = { bass: $('killLow'), mid: $('killMid'), treble: $('killHigh') };
+  function applyKillState(){
+    ensureAudioGraph();
+    const nodes = eqNodes[activeIdx];
+    if(!nodes) return;
+    const t = allTracks.find(tr => tr.id === queue[queueIndex]);
+    const preset = (t && VIBES[t.vibe]) || globalEQ;
+    nodes.bass.gain.value = killState.bass ? -40 : preset.bass;
+    nodes.mid.gain.value = killState.mid ? -40 : preset.mid;
+    nodes.treble.gain.value = killState.treble ? -40 : preset.treble;
+  }
+  Object.keys(killButtons).forEach(band => {
+    killButtons[band].addEventListener('click', () => {
+      killState[band] = !killState[band];
+      killButtons[band].classList.toggle('killed', killState[band]);
+      applyKillState();
+    });
+  });
+
+  // ---------------- Hot cues: 4 pads, tap empty to set at current position, tap set to jump ----------------
+  let hotCues = [null, null, null, null];
+  function refreshHotcueButtons(){
+    document.querySelectorAll('.hotcue-btn').forEach(btn => {
+      const slot = parseInt(btn.dataset.slot, 10);
+      btn.classList.toggle('set', hotCues[slot] != null);
+    });
+  }
+  document.querySelectorAll('.hotcue-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slot = parseInt(btn.dataset.slot, 10);
+      const a = activeAudio();
+      if(hotCues[slot] == null){
+        hotCues[slot] = a.currentTime;
+        toast(`Hot cue ${slot+1} set`);
+      } else {
+        a.currentTime = hotCues[slot];
+        if(a.paused) a.play().catch(()=>{});
+        toast(`Jumped to hot cue ${slot+1}`);
+      }
+      refreshHotcueButtons();
+    });
+    let holdTimer = null;
+    btn.addEventListener('pointerdown', () => {
+      holdTimer = setTimeout(() => {
+        const slot = parseInt(btn.dataset.slot, 10);
+        if(hotCues[slot] != null){
+          hotCues[slot] = null;
+          refreshHotcueButtons();
+          toast(`Hot cue ${slot+1} cleared`);
+          if(navigator.vibrate) navigator.vibrate(12);
+        }
+      }, 600);
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, () => clearTimeout(holdTimer)));
+  });
+
+  // ---------------- VU meter: live level from the active deck via an analyser tap ----------------
+  let vuAnalyser = null;
+  let vuData = null;
+  function ensureVUAnalyser(){
+    if(vuAnalyser || !audioCtx) return;
+    try{
+      vuAnalyser = audioCtx.createAnalyser();
+      vuAnalyser.fftSize = 256;
+      vuData = new Uint8Array(vuAnalyser.frequencyBinCount);
+      // tap post-limiter chain isn't directly exposed per-deck here, so tap destination-adjacent
+      // by connecting each deck's gain node output into the analyser as a parallel branch.
+      gainNodes.forEach(g => { if(g) g.connect(vuAnalyser); });
+    }catch(e){ /* ok if unsupported */ }
+  }
+  function vuLoop(){
+    if($('djModeBackdrop').style.display !== 'flex'){ requestAnimationFrame(vuLoop); return; }
+    ensureVUAnalyser();
+    if(vuAnalyser && vuData){
+      vuAnalyser.getByteFrequencyData(vuData);
+      let sum = 0;
+      for(let i=0;i<vuData.length;i++) sum += vuData[i];
+      const avg = sum / vuData.length;
+      const pct = Math.min(100, (avg / 140) * 100);
+      $('vuFill').style.width = pct + '%';
+    }
+    requestAnimationFrame(vuLoop);
+  }
+  vuLoop();
 
   function updatePitchUI(){
     const thumb = $('pitchThumb');
