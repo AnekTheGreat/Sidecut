@@ -86,48 +86,154 @@
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
-  /* ---------- DJ Mode: turntable ---------- */
-  .turntable{
-    position:relative; width:260px; height:260px; margin:8px auto 4px; padding:18px;
-    touch-action: none;
-    background: linear-gradient(145deg, #2b2b2b, #161616);
-    border-radius:18px;
-    box-shadow: 0 16px 34px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(0,0,0,0.4);
+  /* ---------- DJ Mode: real turntable rig ---------- */
+  .deck-body{
+    position:relative; width:100%; max-width:340px; margin:6px auto 4px;
+    padding:20px 20px 26px;
+    background:
+      linear-gradient(160deg, #35322c, #1c1a16 60%, #121110);
+    border-radius:16px;
+    box-shadow: 0 20px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.5);
+  }
+  .deck-brand{
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:#8a8577;
+    text-align:left; margin-bottom:10px; opacity:0.8;
+  }
+  .platter-wrap{
+    position:relative; width:100%; aspect-ratio:1/1; margin:0 auto;
   }
   .platter{
     position:relative; width:100%; height:100%; border-radius:50%;
     touch-action: none;
-    background: radial-gradient(circle, #363636 0%, #232323 65%, #1a1a1a 100%);
-    box-shadow: inset 0 0 18px rgba(0,0,0,0.65), 0 2px 6px rgba(0,0,0,0.4);
+    background: radial-gradient(circle, #2b2b2b 0%, #1c1c1c 70%, #141414 100%);
+    box-shadow: inset 0 0 22px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
     display:flex; align-items:center; justify-content:center;
   }
-  .turntable .disc{ width:87%; height:87%; }
+  /* subtle ridge lines like a real platter mat */
+  .platter::before{
+    content:''; position:absolute; inset:6%; border-radius:50%;
+    background:
+      repeating-radial-gradient(circle at center, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 5px);
+    pointer-events:none;
+  }
+  .platter-ring-markers{
+    position:absolute; inset:0; border-radius:50%; pointer-events:none;
+  }
+  .platter-ring-markers span{
+    position:absolute; width:2px; height:6%; background:rgba(255,255,255,0.12);
+    left:50%; top:2%; transform-origin:50% 2400%;
+  }
+  .deck-disc{
+    width:82%; height:82%; border-radius:50%; position:relative;
+    touch-action:none;
+    background:
+      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 30%),
+      repeating-radial-gradient(circle at center, #101414 0, #101414 1.4px, #1a1e1e 1.4px, #1a1e1e 2.8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+    display:flex; align-items:center; justify-content:center;
+    animation: spin 1.8s linear infinite; animation-play-state: paused;
+  }
+  .deck-disc.spinning{ animation-play-state: running; }
+  .deck-disc-label{
+    width:34%; height:34%; border-radius:50%; position:relative; z-index:1;
+    background: radial-gradient(circle at 35% 30%, var(--gold), var(--coral) 75%);
+    background-size:cover; background-position:center;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.55), inset 0 0 6px rgba(0,0,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .deck-disc-label::after{
+    content:''; width:14%; height:14%; border-radius:50%; background:#0A0D0E;
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25);
+  }
+  .spindle{
+    position:absolute; top:50%; left:50%; width:5%; height:5%; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ddd, #888);
+    transform: translate(-50%,-50%); z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.6);
+  }
+  .tonearm-base{
+    position:absolute; top:6%; right:5%; width:15%; height:15%; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #4a4a4a, #232323);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.06);
+    z-index:7;
+  }
   .tonearm{
-    position:absolute; top:16px; right:14px; width:96px; height:6px;
-    transform-origin: 88% 50%;
-    transform: rotate(-32deg);
-    transition: transform 0.7s cubic-bezier(0.34, 1.15, 0.64, 1);
-    z-index:6;
+    position:absolute; top:calc(6% + 6px); right:calc(5% + 6px); width:46%; height:5px;
+    transform-origin: 92% 50%;
+    transform: rotate(-26deg);
+    transition: transform 0.6s cubic-bezier(0.34, 1.1, 0.6, 1);
+    z-index:8;
   }
-  .turntable.playing .tonearm{ transform: rotate(6deg); }
-  .tonearm::before{
-    content:''; position:absolute; right:-9px; top:-8px; width:22px; height:22px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #ddc196, #8a7455);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    z-index:1;
-  }
+  .deck-disc.spinning ~ .tonearm,
+  .platter.playing .tonearm{ transform: rotate(9deg); }
   .tonearm-shaft{
-    position:absolute; top:1px; left:0; width:100%; height:4px; border-radius:2px;
-    background: linear-gradient(90deg, #c9a876, #9c8560);
+    position:absolute; top:0; left:0; width:100%; height:100%; border-radius:3px;
+    background: linear-gradient(90deg, #cfc0a0, #9c8560);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
   }
   .tonearm-head{
-    position:absolute; left:-7px; top:-5px; width:18px; height:13px; border-radius:2px;
+    position:absolute; left:-8%; top:-140%; width:16%; height:9px; border-radius:2px;
     background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
   }
   .tonearm-head::after{
-    content:''; position:absolute; left:3px; bottom:-4px; width:2px; height:6px; border-radius:1px;
+    content:''; position:absolute; left:8%; bottom:-4px; width:6%; height:5px; border-radius:1px;
     background: var(--coral);
   }
+  .strobe-dots{
+    position:absolute; inset:0; border-radius:50%; pointer-events:none; z-index:2;
+  }
+
+  /* jog wheel touch ring the finger actually grabs (bigger hit target than the visual disc) */
+  .jog-hint{
+    position:absolute; inset:0; border-radius:50%; z-index:9;
+  }
+
+  .deck-controls{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px;
+  }
+  .pitch-fader-wrap{
+    display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;
+  }
+  .pitch-fader-wrap label{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1.5px; color:#8a8577; }
+  .pitch-track{
+    position:relative; width:34px; height:120px; background:#0e0d0c; border-radius:6px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05); touch-action:none;
+  }
+  .pitch-track::before{
+    content:''; position:absolute; left:50%; top:6px; bottom:6px; width:1px; background:rgba(255,255,255,0.15); transform:translateX(-50%);
+  }
+  .pitch-thumb{
+    position:absolute; left:50%; top:50%; width:26px; height:14px; border-radius:3px;
+    background: linear-gradient(180deg, #e8e2d8, #b8b0a0);
+    transform:translate(-50%,-50%); box-shadow:0 2px 4px rgba(0,0,0,0.5);
+  }
+  .pitch-thumb::after{ content:''; position:absolute; left:3px; right:3px; top:50%; height:1px; background:rgba(0,0,0,0.3); transform:translateY(-50%); }
+  .pitch-readout{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--coral); min-width:38px; text-align:center; }
+
+  .deck-center-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; flex:1; }
+  .deck-btn-row{ display:flex; gap:10px; }
+  .deck-btn{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; font-weight:600;
+    padding:9px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+    background:#232220; color:var(--ink-dim);
+  }
+  .deck-btn.cue{ background:#3a2620; color:#ff8a6b; border-color:#5a3a30; }
+  .deck-btn.play{ background: var(--coral); color:#161616; border-color:var(--coral); }
+  .deck-btn.active{ box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 60%, transparent); }
+  .deck-track-name{ font-size:14.5px; font-weight:600; text-align:center; }
+  .deck-track-artist{ font-size:11.5px; color:var(--ink-dim); text-align:center; }
+
+  .crossfader-wrap{ margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .crossfader-wrap label{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:#8a8577; }
+  .crossfader-track{
+    position:relative; width:180px; height:20px; background:#0e0d0c; border-radius:10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.6); touch-action:none;
+  }
+  .crossfader-thumb{
+    position:absolute; top:50%; left:50%; width:26px; height:26px; border-radius:6px;
+    background: linear-gradient(180deg, #e8e2d8, #b8b0a0);
+    transform:translate(-50%,-50%); box-shadow:0 2px 5px rgba(0,0,0,0.5);
+  }
+
   #emptyState h2{ font-size:24px; max-width:300px; line-height:1.3; }
   #emptyState p{ color:var(--ink-dim); max-width:280px; font-size:14px; line-height:1.5; }
 
@@ -563,25 +669,69 @@
   </div>
 </div>
 
-<!-- DJ Mode: big scratchable vinyl -->
+<!-- DJ Mode: real turntable rig -->
 <div class="modal-backdrop" id="djModeBackdrop">
   <div class="modal" style="align-items:center; text-align:center;">
     <h3 style="letter-spacing:2px; font-size:14px; color:var(--ink-dim);">DJ MODE</h3>
-    <div class="turntable" id="djTurntable">
-      <div class="platter">
-        <div class="disc" id="djDisc">
-          <div class="disc-label" id="djDiscLabel"></div>
+
+    <div class="deck-body">
+      <div class="deck-brand">SIDECUT · SL-1200 STYLE DIRECT DRIVE</div>
+      <div class="platter-wrap">
+        <div class="platter" id="djPlatter">
+          <div class="platter-ring-markers" id="djStrobe"></div>
+          <div class="deck-disc" id="djDisc">
+            <div class="deck-disc-label" id="djDiscLabel"></div>
+          </div>
+          <div class="spindle"></div>
+          <div class="jog-hint" id="djJog"></div>
+        </div>
+        <div class="tonearm-base"></div>
+        <div class="tonearm" id="djTonearm">
+          <div class="tonearm-shaft"></div>
+          <div class="tonearm-head"></div>
         </div>
       </div>
-      <div class="tonearm" id="djTonearm">
-        <div class="tonearm-shaft"></div>
-        <div class="tonearm-head"></div>
+
+      <div class="deck-controls">
+        <div class="pitch-fader-wrap">
+          <label>PITCH</label>
+          <div class="pitch-track" id="pitchTrack">
+            <div class="pitch-thumb" id="pitchThumb"></div>
+          </div>
+          <div class="pitch-readout" id="pitchReadout">0%</div>
+        </div>
+
+        <div class="deck-center-controls">
+          <div class="deck-track-name" id="djTrackTitle">—</div>
+          <div class="deck-track-artist" id="djTrackArtist">—</div>
+          <div class="deck-btn-row">
+            <button class="deck-btn cue" id="djCueBtn">CUE</button>
+            <button class="deck-btn play" id="djPlayPause">PLAY</button>
+          </div>
+          <div class="deck-btn-row">
+            <button class="deck-btn" id="djSyncBtn" title="Snap pitch back to normal">SYNC</button>
+            <button class="deck-btn" id="djLoopBtn" title="Loop last 4 seconds">LOOP 4s</button>
+          </div>
+        </div>
+
+        <div class="pitch-fader-wrap">
+          <label>GAIN</label>
+          <div class="pitch-track" id="gainTrack">
+            <div class="pitch-thumb" id="gainThumb"></div>
+          </div>
+          <div class="pitch-readout" id="gainReadout">0dB</div>
+        </div>
+      </div>
+
+      <div class="crossfader-wrap">
+        <label>CROSSFADE TO NEXT</label>
+        <div class="crossfader-track" id="crossfaderTrack">
+          <div class="crossfader-thumb" id="crossfaderThumb"></div>
+        </div>
       </div>
     </div>
-    <div style="font-size:15px; font-weight:600; margin-top:8px;" id="djTrackTitle">—</div>
-    <div style="font-size:12.5px; color:var(--ink-dim); margin-bottom:6px;" id="djTrackArtist">—</div>
-    <div style="font-size:11px; color:var(--ink-dim);">Grab the record to scratch</div>
-    <button class="playlist-pick-btn" id="djPlayPause" style="margin-top:12px; text-align:center;">Pause</button>
+
+    <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Grab the record to scratch — release to resume at pitch speed.</div>
     <div class="modal-btns">
       <button class="cancel" id="djModeClose" style="flex:1;">Exit DJ Mode</button>
     </div>
@@ -1009,6 +1159,7 @@
         const treble = audioCtx.createBiquadFilter();
         treble.type = 'highshelf'; treble.frequency.value = 4000;
         const gain = audioCtx.createGain();
+        const deckGain = audioCtx.createGain(); // per-deck DJ Mode gain knob, on top of normalization gain
         // Limiter: bass boosts + volume normalization can push the signal past 0dB, which
         // clips into a harsh, "choppy" distortion rather than sounding like real bass.
         // This smooths that out instead of letting peaks slam into a hard ceiling.
@@ -1018,12 +1169,14 @@
         limiter.ratio.value = 16;
         limiter.attack.value = 0.003;
         limiter.release.value = 0.25;
-        src.connect(bass).connect(mid).connect(treble).connect(gain).connect(limiter).connect(audioCtx.destination);
+        src.connect(bass).connect(mid).connect(treble).connect(gain).connect(deckGain).connect(limiter).connect(audioCtx.destination);
         eqNodes[idx] = { bass, mid, treble };
         gainNodes[idx] = gain;
+        deckGainNodes[idx] = deckGain;
       });
     }catch(e){ console.warn('Audio graph setup failed, normalization/EQ disabled', e); }
   }
+  const deckGainNodes = [null, null]; // DJ Mode "GAIN" knob per deck, independent of auto-normalize
   function applyEQ(t, audioIdx){
     ensureAudioGraph();
     const nodes = eqNodes[audioIdx];
@@ -2163,6 +2316,7 @@
   function onTimeUpdate(e){
     const a = e.target;
     if(a !== activeAudio() || !a.duration) return;
+    if(isScratching) return; // scratch loop owns the seek display + time while active
     const pct = (a.currentTime / a.duration) * 100;
     updateSeekDisplay(pct);
     $('miniFill').style.width = pct + '%';
@@ -2180,7 +2334,7 @@
     $('npDisc').classList.add('spinning');
     $('playIcon').innerHTML = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-    if($('djModeBackdrop').style.display === 'flex'){ $('djDisc').classList.add('spinning'); $('djTurntable').classList.add('playing'); $('djPlayPause').textContent = 'Pause'; }
+    if($('djModeBackdrop').style.display === 'flex') refreshDjMode();
   }
   function onPauseEvt(e){
     if(e.target !== activeAudio()) return;
@@ -2188,7 +2342,7 @@
     $('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     savePlaybackState(true);
-    if($('djModeBackdrop').style.display === 'flex'){ $('djDisc').classList.remove('spinning'); $('djTurntable').classList.remove('playing'); $('djPlayPause').textContent = 'Play'; }
+    if($('djModeBackdrop').style.display === 'flex') refreshDjMode();
   }
   // Recreates a track's blob URL and retries playback — handles the case where
   // Android reclaims memory while backgrounded and the old blob URL goes dead.
@@ -2236,6 +2390,7 @@
   let lastWatchdogTime = -1;
   let stuckTicks = 0;
   setInterval(() => {
+    if(isScratching) return;
     const a = activeAudio();
     if(a.paused || !a.duration) { stuckTicks = 0; lastWatchdogTime = -1; return; }
     if(a.currentTime === lastWatchdogTime){
@@ -2436,63 +2591,179 @@
     highlightPlaying(t.id);
   });
 
-  // ---------------- Scratch: drag the vinyl to scrub + pitch-bend, like a real turntable ----------------
-  function attachScratch(discEl){
-    let dragging = false;
-    let startX = 0, lastX = 0, lastMoveTime = 0;
+  // ================================================================
+  // ---------------- REAL SCRATCH / DJ TURNTABLE ENGINE ----------------
+  // ================================================================
+  // Design: grabbing the platter pauses normal playback and hands control of
+  // currentTime directly to the finger (1:1 rotation -> seconds), same as a
+  // real vinyl. Releasing snaps playback back on at the current pitch speed,
+  // with a short "throw" (momentum) if you release mid-swipe fast, just like
+  // letting go of a spinning record.
+  let isScratching = false;
+  let scratchAudio = null;         // which <audio> element is being scratched
+  let scratchStartAngle = 0;
+  let scratchLastAngle = 0;
+  let scratchLastTime = 0;
+  let scratchWasPlaying = false;
+  let scratchAccum = 0;            // seconds of currentTime accumulated this drag
+  let scratchVelocityHistory = [];  // [{dt, dAngleDeg}] for throw/momentum on release
+  let scratchRotationDeg = 0;       // visual rotation applied on top of the CSS spin anim
 
+  const PIXELS_TO_DEGREES = 0.6; // linear drag fallback sensitivity if not using angle-based math
+  const SECONDS_PER_360 = 1.8;   // how many seconds of audio one full platter rotation covers (~turntable feel)
+
+  function angleFromCenter(el, clientX, clientY){
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    return Math.atan2(clientY - cy, clientX - cx) * (180/Math.PI);
+  }
+
+  function shortestAngleDelta(a, b){
+    let d = b - a;
+    while(d > 180) d -= 360;
+    while(d < -180) d += 360;
+    return d;
+  }
+
+  function beginScratch(el, clientX, clientY, useAngle){
+    if(queueIndex < 0 || queueIndex >= queue.length) return;
+    const a = activeAudio();
+    isScratching = true;
+    scratchAudio = a;
+    scratchWasPlaying = !a.paused;
+    a.pause();
+    if(useAngle){
+      scratchStartAngle = angleFromCenter(el, clientX, clientY);
+      scratchLastAngle = scratchStartAngle;
+    } else {
+      scratchLastAngle = clientX;
+    }
+    scratchLastTime = performance.now();
+    scratchAccum = a.currentTime;
+    scratchVelocityHistory = [];
+    scratchRotationDeg = 0;
+    el.classList.add('scratching');
+    if(navigator.vibrate) navigator.vibrate(6);
+  }
+
+  function moveScratch(el, clientX, clientY, useAngle){
+    if(!isScratching || scratchAudio !== activeAudio()) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - scratchLastTime);
+
+    let dAngle;
+    if(useAngle){
+      const angle = angleFromCenter(el, clientX, clientY);
+      dAngle = shortestAngleDelta(scratchLastAngle, angle);
+      scratchLastAngle = angle;
+    } else {
+      const dx = clientX - scratchLastAngle;
+      dAngle = dx * PIXELS_TO_DEGREES;
+      scratchLastAngle = clientX;
+    }
+
+    scratchRotationDeg += dAngle;
+    el.style.transform = `rotate(${scratchRotationDeg}deg)`;
+
+    const dSeconds = (dAngle / 360) * SECONDS_PER_360;
+    scratchAccum = Math.max(0, Math.min(scratchAudio.duration || scratchAccum, scratchAccum + dSeconds));
+    scratchAudio.currentTime = scratchAccum;
+
+    // scratch "sound": bump playbackRate briefly in the drag direction so it
+    // audibly stutters like a real needle being dragged, not just a silent seek
+    const instVelocity = dAngle / dt; // deg per ms
+    const rate = Math.max(0.05, Math.min(4, 1 + instVelocity * 0.35));
+    try{ scratchAudio.playbackRate = rate; }catch(e){}
+    if(scratchAudio.paused) scratchAudio.play().catch(()=>{});
+
+    scratchVelocityHistory.push({ t: now, dAngle });
+    if(scratchVelocityHistory.length > 8) scratchVelocityHistory.shift();
+
+    scratchLastTime = now;
+
+    // live-update seek UI while scratching
+    if(scratchAudio.duration){
+      const pct = (scratchAccum / scratchAudio.duration) * 100;
+      updateSeekDisplay(pct);
+      $('curTime').textContent = fmtTime(scratchAccum);
+    }
+  }
+
+  function endScratch(el){
+    if(!isScratching) return;
+    isScratching = false;
+    el.classList.remove('scratching');
+    el.style.transform = '';
+
+    // Compute release velocity for a short momentum "throw", like letting go of a real record
+    let releaseDegPerMs = 0;
+    if(scratchVelocityHistory.length){
+      const totalDt = scratchVelocityHistory.reduce((s,v)=>s+ (v.dAngle!==undefined?1:0),0);
+      const sumAngle = scratchVelocityHistory.reduce((s,v)=>s+v.dAngle,0);
+      const span = Math.max(1, scratchVelocityHistory.length * 16);
+      releaseDegPerMs = sumAngle / span;
+    }
+
+    const a = scratchAudio;
+    if(a){
+      a.playbackRate = playbackSpeed;
+      if(scratchWasPlaying){
+        a.play().catch(()=>{});
+      } else {
+        a.pause();
+      }
+    }
+    scratchAudio = null;
+    scratchVelocityHistory = [];
+  }
+
+  function attachScratch(discEl, useAngle){
     discEl.addEventListener('pointerdown', (e) => {
-      if(queueIndex < 0 || queueIndex >= queue.length) return;
       e.preventDefault();
-      dragging = true;
-      startX = e.clientX;
-      lastX = e.clientX;
-      lastMoveTime = Date.now();
       discEl.setPointerCapture(e.pointerId);
-      discEl.classList.add('scratching');
+      beginScratch(discEl, e.clientX, e.clientY, useAngle);
     });
     discEl.addEventListener('pointermove', (e) => {
-      if(!dragging) return;
+      if(!isScratching) return;
       e.preventDefault();
-      const a = activeAudio();
-      const now = Date.now();
-      const dt = Math.max(1, now - lastMoveTime);
-      const dx = e.clientX - lastX;
-      lastX = e.clientX; lastMoveTime = now;
-
-      // Velocity-based pitch-bend — fast drags bend the pitch further, direction-sensitive
-      const velocity = dx / dt; // px per ms
-      const bend = Math.max(-1.7, Math.min(1.7, velocity * 6));
-      a.playbackRate = Math.max(0.15, playbackSpeed + bend);
-      // Small scrub nudge so it also *sounds* like it's being dragged, not just pitched
-      if(a.duration) a.currentTime = Math.max(0, Math.min(a.duration, a.currentTime + dx * 0.008));
-
-      // Visually rotate the disc to follow the finger while paused mid-scratch
-      const totalDx = e.clientX - startX;
-      discEl.style.transform = `rotate(${totalDx * 1.3}deg)`;
+      moveScratch(discEl, e.clientX, e.clientY, useAngle);
     });
-    function endScratch(e){
-      if(!dragging) return;
-      dragging = false;
-      discEl.classList.remove('scratching');
-      discEl.style.transform = '';
-      activeAudio().playbackRate = playbackSpeed; // snap back to normal speed
+    function release(e){
+      if(!isScratching) return;
+      try{ discEl.releasePointerCapture(e.pointerId); }catch(err){}
+      endScratch(discEl);
     }
-    discEl.addEventListener('pointerup', endScratch);
-    discEl.addEventListener('pointercancel', endScratch);
+    discEl.addEventListener('pointerup', release);
+    discEl.addEventListener('pointercancel', release);
   }
-  attachScratch($('npDisc'));
-  attachScratch($('djDisc'));
+  // Mini disc in the now-playing bar: simple linear-drag scratch (small target, angle math overkill)
+  attachScratch($('npDisc'), false);
+  // Big DJ Mode platter: angle-based scratch (grab anywhere on the record, like a real turntable)
+  attachScratch($('djJog'), true);
+  attachScratch($('djDisc'), true);
 
-  // ---------------- DJ Mode ----------------
+  // ---------------- DJ Mode: turntable rig wiring ----------------
+  let pitchPercent = 0;     // -100..100, mapped to 0.5x..1.5x-ish like real pitch faders (+/-50% typical range on DJ decks, but keep it musical)
+  let deckGainDb = 0;       // -12..+12 dB on the deck's own gain knob
+  let crossfadePos = 0;     // -1 (this deck only) .. +1 (next track only) — visual/UX only, ties into existing crossfade length setting when released far right
+
+  function pitchPercentToRate(p){
+    // +/-100% slider maps to +/-20% playback speed change — matches real DJ pitch fader feel
+    return 1 + (p/100) * 0.2;
+  }
+
   function refreshDjMode(){
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(!t) return;
     $('djTrackTitle').textContent = t.name;
     $('djTrackArtist').textContent = t.artist;
     $('djDiscLabel').style.backgroundImage = t.artUrl ? `url("${t.artUrl}")` : '';
-    $('djDisc').classList.toggle('spinning', !activeAudio().paused); $('djTurntable').classList.toggle('playing', !activeAudio().paused);
-    $('djPlayPause').textContent = activeAudio().paused ? 'Play' : 'Pause';
+    const playing = !activeAudio().paused;
+    $('djDisc').classList.toggle('spinning', playing);
+    $('djPlatter').classList.toggle('playing', playing);
+    $('djPlayPause').textContent = playing ? 'PAUSE' : 'PLAY';
+    $('djPlayPause').classList.toggle('active', playing);
   }
   $('djModeBtn').addEventListener('click', () => {
     if(queueIndex < 0 || queueIndex >= queue.length){ toast('Play a song first to enter DJ Mode'); return; }
@@ -2508,6 +2779,128 @@
     else a.pause();
     refreshDjMode();
   });
+  // CUE: jump back to the last spot you started playback from in this DJ session (simple, real-DJ-ish cue point)
+  let djCuePoint = 0;
+  $('djCueBtn').addEventListener('click', () => {
+    const a = activeAudio();
+    if(!a.paused){
+      djCuePoint = a.currentTime;
+      a.pause();
+      toast('Cue point set');
+    } else {
+      a.currentTime = djCuePoint;
+      a.play().catch(()=>{});
+    }
+    refreshDjMode();
+  });
+  $('djSyncBtn').addEventListener('click', () => {
+    pitchPercent = 0;
+    updatePitchUI();
+    applyPitch();
+    toast('Pitch reset to normal speed');
+  });
+  // LOOP 4s: simple manual loop of the last 4 seconds heard, toggled
+  let loopActive = false;
+  let loopStart = 0;
+  function loopWatcher(){
+    if(!loopActive) return;
+    const a = activeAudio();
+    if(a.currentTime >= loopStart + 4) a.currentTime = loopStart;
+    requestAnimationFrame(loopWatcher);
+  }
+  $('djLoopBtn').addEventListener('click', () => {
+    loopActive = !loopActive;
+    $('djLoopBtn').classList.toggle('active', loopActive);
+    if(loopActive){
+      loopStart = Math.max(0, activeAudio().currentTime - 4);
+      toast('Looping last 4s');
+      loopWatcher();
+    } else {
+      toast('Loop off');
+    }
+  });
+
+  function updatePitchUI(){
+    const thumb = $('pitchThumb');
+    const track = $('pitchTrack');
+    const trackH = track.clientHeight - 20;
+    const posPx = (-pitchPercent/100) * (trackH/2); // up = faster, matches real decks (push up = +pitch)
+    thumb.style.top = `calc(50% + ${posPx}px)`;
+    const sign = pitchPercent > 0 ? '+' : '';
+    $('pitchReadout').textContent = `${sign}${pitchPercent.toFixed(0)}%`;
+  }
+  function applyPitch(){
+    if(isScratching) return; // don't fight the scratch engine
+    const rate = pitchPercentToRate(pitchPercent);
+    playbackSpeedDJ = rate;
+    activeAudio().playbackRate = rate;
+  }
+  let playbackSpeedDJ = 1;
+
+  function attachFaderDrag(trackEl, thumbEl, onChange){
+    trackEl.addEventListener('pointerdown', (e) => {
+      trackEl.setPointerCapture(e.pointerId);
+      handleFaderPointer(e);
+    });
+    trackEl.addEventListener('pointermove', (e) => {
+      if(e.buttons !== 1 && e.pressure === 0) return;
+      handleFaderPointer(e);
+    });
+    function handleFaderPointer(e){
+      const rect = trackEl.getBoundingClientRect();
+      const usable = rect.height - 20;
+      const centerY = rect.top + rect.height/2;
+      let offset = centerY - e.clientY; // up = positive
+      offset = Math.max(-usable/2, Math.min(usable/2, offset));
+      const pct = (offset / (usable/2)) * 100;
+      onChange(pct);
+    }
+  }
+  attachFaderDrag($('pitchTrack'), $('pitchThumb'), (pct) => {
+    pitchPercent = Math.max(-100, Math.min(100, pct));
+    updatePitchUI();
+    applyPitch();
+  });
+  attachFaderDrag($('gainTrack'), $('gainThumb'), (pct) => {
+    deckGainDb = Math.max(-12, Math.min(12, (pct/100)*12));
+    const thumb = $('gainThumb');
+    const track = $('gainTrack');
+    const trackH = track.clientHeight - 20;
+    const posPx = (-deckGainDb/12) * (trackH/2);
+    thumb.style.top = `calc(50% + ${posPx}px)`;
+    $('gainReadout').textContent = `${deckGainDb>0?'+':''}${deckGainDb.toFixed(1)}dB`;
+    ensureAudioGraph();
+    const node = deckGainNodes[activeIdx];
+    if(node) node.gain.value = Math.pow(10, deckGainDb/20);
+  });
+  updatePitchUI();
+
+  // Crossfader: purely a feel/visual control here — dragging hard toward "next"
+  // triggers the existing crossfade engine early, same blend logic already in use.
+  attachFaderDrag2Axis();
+  function attachFaderDrag2Axis(){
+    const track = $('crossfaderTrack');
+    const thumb = $('crossfaderThumb');
+    function setPos(clientX){
+      const rect = track.getBoundingClientRect();
+      const usable = rect.width - 26;
+      let x = clientX - rect.left - rect.width/2;
+      x = Math.max(-usable/2, Math.min(usable/2, x));
+      crossfadePos = x / (usable/2); // -1..1
+      thumb.style.left = `calc(50% + ${x}px)`;
+    }
+    track.addEventListener('pointerdown', (e) => { track.setPointerCapture(e.pointerId); setPos(e.clientX); });
+    track.addEventListener('pointermove', (e) => { if(e.buttons === 1) setPos(e.clientX); });
+    track.addEventListener('pointerup', (e) => {
+      if(crossfadePos > 0.85 && !crossfadeTriggered){
+        maybeStartCrossfade();
+        toast('Crossfading to next track');
+      }
+      // snap back to center after release, like letting go of a spring-centered fader
+      crossfadePos = 0;
+      thumb.style.left = '50%';
+    });
+  }
 
   window.addEventListener('pagehide', () => savePlaybackState(true));
   document.addEventListener('visibilitychange', () => {
