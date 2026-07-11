@@ -260,6 +260,25 @@
   .dj-strip-item .sta{ font-size:9.5px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .dj-strip-empty{ font-size:11.5px; color:var(--ink-dim); padding:8px 4px; }
   .record-panel{ margin-top:16px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px; }
+  .fx-section{ margin-top:16px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px; }
+  .section-label{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:1.5px; color:#8a8577; }
+  .tempo-readout{ display:flex; align-items:center; gap:8px; }
+  #bpmReadout{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--coral); font-weight:700; }
+  .fx-pad-row{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .fx-pad{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:10px 4px; border-radius:9px; border:1px solid rgba(255,255,255,0.1);
+    background:#232220; color:var(--ink-dim); cursor:pointer; font-size:16px;
+  }
+  .fx-pad span{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.5px; color:var(--ink-dim); }
+  .fx-pad.firing{ background: color-mix(in srgb, var(--gold) 35%, #232220); border-color:var(--gold); }
+  .beat-repeat-row{ display:flex; gap:8px; }
+  .beat-pad{
+    flex:1; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
+    padding:10px 0; border-radius:8px; border:1px solid rgba(255,255,255,0.1);
+    background:#232220; color:var(--ink-dim); cursor:pointer;
+  }
+  .beat-pad.active{ background: color-mix(in srgb, var(--coral) 35%, #232220); color:var(--coral); border-color:var(--coral); }
   .record-row{ display:flex; align-items:center; justify-content:center; gap:14px; }
   .record-btn{
     display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
@@ -830,6 +849,33 @@
         <button class="hotcue-btn" data-slot="1">2</button>
         <button class="hotcue-btn" data-slot="2">3</button>
         <button class="hotcue-btn" data-slot="3">4</button>
+      </div>
+
+      <div class="fx-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="section-label">FX PADS</span>
+          <div class="tempo-readout">
+            <span id="bpmReadout">-- BPM</span>
+            <button class="deck-btn" id="tapTempoBtn" style="padding:5px 10px; font-size:9.5px;">TAP</button>
+          </div>
+        </div>
+        <div class="fx-pad-row" id="fxPadRow">
+          <button class="fx-pad" data-fx="airhorn">🎺<span>AIR HORN</span></button>
+          <button class="fx-pad" data-fx="siren">🚨<span>SIREN</span></button>
+          <button class="fx-pad" data-fx="riser">📈<span>RISER</span></button>
+          <button class="fx-pad" data-fx="scratchstab">🔊<span>STAB</span></button>
+          <button class="fx-pad" data-fx="reverse">⏪<span>REVERSE</span></button>
+          <button class="fx-pad" data-fx="explosion">💥<span>IMPACT</span></button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0 6px;">
+          <span class="section-label">BEAT REPEAT (hold)</span>
+        </div>
+        <div class="beat-repeat-row" id="beatRepeatRow">
+          <button class="beat-pad" data-beats="0.25">1/4</button>
+          <button class="beat-pad" data-beats="0.5">1/2</button>
+          <button class="beat-pad" data-beats="1">1</button>
+          <button class="beat-pad" data-beats="2">2</button>
+        </div>
       </div>
 
       <div class="crossfader-wrap">
@@ -2577,6 +2623,7 @@
     const a = e.target;
     if(a !== activeAudio() || !a.duration) return;
     if(isScratching) return; // scratch loop owns the seek display + time while active
+    if($('djModeBackdrop').style.display === 'flex') return; // DJ Mode owns sound + UI now — the main <audio> is intentionally paused/idle
     const pct = (a.currentTime / a.duration) * 100;
     updateSeekDisplay(pct);
     $('miniFill').style.width = pct + '%';
@@ -3229,6 +3276,12 @@
       loopActive = false;
       if($('djLoopBtn')) $('djLoopBtn').classList.remove('active');
       djCuePoint = 0;
+      // Tap tempo is per-song too — a stale BPM from the last track would throw
+      // off beat-repeat timing on the new one.
+      if(typeof tapTimes !== 'undefined') tapTimes = [];
+      liveBpm = null;
+      if(typeof stopBeatRepeat === 'function') stopBeatRepeat();
+      document.querySelectorAll('.beat-pad').forEach(b => b.classList.remove('active'));
     }
     $('djTrackTitle').textContent = t.name;
     $('djTrackArtist').textContent = t.artist;
@@ -3238,12 +3291,15 @@
     $('djPlatter').classList.toggle('playing', playing);
     $('djPlayPause').textContent = deckEngine.decoding ? '…' : (playing ? 'PAUSE' : 'PLAY');
     $('djPlayPause').classList.toggle('active', playing);
+    if(typeof refreshBpmReadoutForTrack === 'function') refreshBpmReadoutForTrack();
   }
 
   async function enterDjMode(){
     if(queueIndex < 0 || queueIndex >= queue.length){ toast('Play a song first to enter DJ Mode'); return; }
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(!t) return;
+    cancelCrossfade(); // a crossfade left running in the background would silently advance
+                        // the main queue while DJ Mode is watching a totally separate track.
     const a = activeAudio();
     const wasPlaying = !a.paused;
     const startFrom = a.currentTime || 0;
@@ -3423,6 +3479,188 @@
     requestAnimationFrame(vuLoop);
   }
   vuLoop();
+
+  // ---------------- FX pads: synthesized one-shots mixed straight into the deck's own chain ----------------
+  // No sample files to ship, so each FX is built live from oscillators/noise —
+  // still lands in the recording since it's connected into the same graph.
+  function fxDestination(){
+    ensureAudioGraph();
+    // Feed FX straight into the limiter (post-EQ) so kill switches don't accidentally mute your air horn.
+    return limiterNodes[0];
+  }
+  function playAirhorn(){
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    [0, 0.28, 0.56].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(370, t0 + delay);
+      g.gain.setValueAtTime(0, t0 + delay);
+      g.gain.linearRampToValueAtTime(0.5, t0 + delay + 0.02);
+      g.gain.setValueAtTime(0.5, t0 + delay + 0.22);
+      g.gain.linearRampToValueAtTime(0, t0 + delay + 0.27);
+      osc.connect(g).connect(dest);
+      osc.start(t0 + delay); osc.stop(t0 + delay + 0.3);
+    });
+  }
+  function playSiren(){
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, t0);
+    for(let i=0;i<6;i++){
+      osc.frequency.linearRampToValueAtTime(1100, t0 + i*0.3 + 0.15);
+      osc.frequency.linearRampToValueAtTime(500, t0 + i*0.3 + 0.3);
+    }
+    g.gain.setValueAtTime(0.35, t0);
+    g.gain.setValueAtTime(0.35, t0 + 1.8);
+    g.gain.linearRampToValueAtTime(0, t0 + 1.95);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0 + 2);
+  }
+  function playRiser(){
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, t0);
+    osc.frequency.exponentialRampToValueAtTime(1800, t0 + 1.6);
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 1.5);
+    g.gain.linearRampToValueAtTime(0, t0 + 1.65);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0 + 1.7);
+  }
+  function playScratchStab(){
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(180, t0);
+    osc.frequency.exponentialRampToValueAtTime(60, t0 + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.2);
+    g.gain.setValueAtTime(0.5, t0);
+    g.gain.linearRampToValueAtTime(0, t0 + 0.22);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0 + 0.25);
+  }
+  function playExplosion(){
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    const bufferSize = ctx.sampleRate * 0.6;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2.5);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.setValueAtTime(2000, t0); lp.frequency.exponentialRampToValueAtTime(120, t0+0.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.7, t0);
+    noise.connect(lp).connect(g).connect(dest);
+    noise.start(t0);
+  }
+  function playReverseFx(){
+    // Reverse-cymbal-style riser: noise burst with an inverted (rising) envelope.
+    const ctx = audioCtx; const dest = fxDestination();
+    const t0 = ctx.currentTime;
+    const dur = 0.9;
+    const bufferSize = ctx.sampleRate * dur;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 2000;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.exponentialRampToValueAtTime(0.45, t0 + dur - 0.05);
+    g.gain.linearRampToValueAtTime(0, t0 + dur);
+    noise.connect(hp).connect(g).connect(dest);
+    noise.start(t0); noise.stop(t0 + dur);
+  }
+  const FX_HANDLERS = {
+    airhorn: playAirhorn, siren: playSiren, riser: playRiser,
+    scratchstab: playScratchStab, explosion: playExplosion, reverse: playReverseFx,
+  };
+  document.querySelectorAll('.fx-pad').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ensureAudioGraph();
+      if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+      const fx = btn.dataset.fx;
+      if(FX_HANDLERS[fx]) FX_HANDLERS[fx]();
+      btn.classList.add('firing');
+      setTimeout(() => btn.classList.remove('firing'), 220);
+      if(navigator.vibrate) navigator.vibrate(8);
+    });
+  });
+
+  // ---------------- Tap tempo: feeds the BPM readout and beat-repeat pad timing ----------------
+  let tapTimes = [];
+  let liveBpm = null;
+  $('tapTempoBtn').addEventListener('click', () => {
+    const now = performance.now();
+    tapTimes.push(now);
+    tapTimes = tapTimes.filter(t => now - t < 3000); // drop stale taps
+    if(tapTimes.length >= 2){
+      const intervals = [];
+      for(let i=1;i<tapTimes.length;i++) intervals.push(tapTimes[i]-tapTimes[i-1]);
+      const avgMs = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+      liveBpm = Math.round(60000 / avgMs);
+      $('bpmReadout').textContent = `${liveBpm} BPM`;
+    }
+    if(navigator.vibrate) navigator.vibrate(5);
+  });
+  // If the track already has an analyzed BPM (from the Mix feature), show it as a starting point.
+  function refreshBpmReadoutForTrack(){
+    const t = allTracks.find(tr => tr.id === djCurrentTrackId);
+    if(t && t.bpm && !liveBpm){ $('bpmReadout').textContent = `${t.bpm} BPM (auto)`; }
+    else if(!liveBpm){ $('bpmReadout').textContent = '-- BPM'; }
+  }
+
+  // ---------------- Beat repeat / stutter: hold a pad to loop a short slice of the live deck ----------------
+  let beatRepeatActive = false;
+  let beatRepeatRAF = null;
+  let beatRepeatStart = 0;
+  let beatRepeatLen = 0.5;
+  function beatLenToSeconds(beats){
+    const bpm = liveBpm || (allTracks.find(tr => tr.id === djCurrentTrackId)?.bpm) || 120;
+    return (60 / bpm) * beats;
+  }
+  function startBeatRepeat(beats){
+    if(!deckEngine.buffer || !deckEngine.running) return;
+    beatRepeatActive = true;
+    beatRepeatLen = beatLenToSeconds(beats);
+    beatRepeatStart = deckNow();
+    function watch(){
+      if(!beatRepeatActive) return;
+      if(deckNow() >= beatRepeatStart + beatRepeatLen) deckSeekTo(beatRepeatStart);
+      beatRepeatRAF = requestAnimationFrame(watch);
+    }
+    watch();
+  }
+  function stopBeatRepeat(){
+    beatRepeatActive = false;
+    if(beatRepeatRAF) cancelAnimationFrame(beatRepeatRAF);
+  }
+  document.querySelectorAll('.beat-pad').forEach(btn => {
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.beat-pad').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      startBeatRepeat(parseFloat(btn.dataset.beats));
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, () => {
+      btn.classList.remove('active');
+      stopBeatRepeat();
+    }));
+  });
 
   // ---------------- Record: capture the deck's actual output (post EQ/gain/scratch/pitch) ----------------
   const djRecorder = {
