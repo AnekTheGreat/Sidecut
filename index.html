@@ -319,6 +319,8 @@
   .fx-pad span{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.5px; color:var(--ink-dim); }
   .fx-pad.firing{ background: color-mix(in srgb, var(--gold) 35%, #232220); border-color:var(--gold); }
   .beat-repeat-row{ display:flex; gap:8px; }
+  .transition-fx-row{ display:flex; gap:8px; }
+  .transition-fx-row .deck-btn{ flex:1; }
   .beat-pad{
     flex:1; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
     padding:10px 0; border-radius:8px; border:1px solid rgba(255,255,255,0.1);
@@ -340,7 +342,7 @@
     box-shadow: inset 0 0 8px rgba(0,0,0,0.6); touch-action:none; cursor:grab;
   }
   .crossfader-track::before{
-    content:'DJ SET →'; position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    content:'NEXT →'; position:absolute; right:14px; top:50%; transform:translateY(-50%);
     font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.2); pointer-events:none;
   }
   .crossfader-thumb{
@@ -825,9 +827,9 @@
     <h3 style="letter-spacing:2px; font-size:14px; color:var(--ink-dim);">DJ MODE</h3>
 
     <div class="dj-track-strip-wrap">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:1.5px; color:#8a8577;">DJ SET</span>
-        <button class="deck-btn" id="djAddCurrentBtn" style="padding:5px 10px; font-size:9.5px;">+ ADD CURRENT SONG</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:1.5px; color:#8a8577; flex-shrink:0;">PLAYLIST</span>
+        <select id="djPlaylistSwitcher" style="flex:1; background:#1e1c19; color:var(--ink); border:1px solid rgba(255,255,255,0.12); border-radius:8px; font-size:11.5px; padding:6px 8px; font-family:'JetBrains Mono',monospace;"></select>
       </div>
       <div class="dj-track-strip" id="djTrackStrip"></div>
     </div>
@@ -879,8 +881,8 @@
             </select>
           </div>
           <div class="deck-btn-row">
-            <button class="deck-btn" id="djPrevTrackBtn" title="Load previous song in DJ Set">◀ PREV</button>
-            <button class="deck-btn" id="djNextTrackBtn" title="Load next song in DJ Set">NEXT ▶</button>
+            <button class="deck-btn" id="djPrevTrackBtn" title="Load previous song in this playlist">◀ PREV</button>
+            <button class="deck-btn" id="djNextTrackBtn" title="Load next song in this playlist">NEXT ▶</button>
           </div>
         </div>
 
@@ -894,6 +896,11 @@
             <label>FILTER</label>
             <div class="knob" id="filterKnob"><div class="knob-indicator"></div></div>
             <div class="knob-readout" id="filterReadout">OFF</div>
+          </div>
+          <div class="knob-wrap">
+            <label>REVERB</label>
+            <div class="knob" id="reverbKnob"><div class="knob-indicator"></div></div>
+            <div class="knob-readout" id="reverbReadout">0%</div>
           </div>
         </div>
       </div>
@@ -952,6 +959,13 @@
           <button class="beat-pad" data-beats="1">1</button>
           <button class="beat-pad" data-beats="2">2</button>
         </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0 6px;">
+          <span class="section-label">TRANSITION FX</span>
+        </div>
+        <div class="transition-fx-row">
+          <button class="deck-btn" id="tapeStopBtn" title="Slow the track to a stop, like cutting power to a turntable">TAPE STOP</button>
+          <button class="deck-btn" id="echoOutBtn" title="Fade the track out into a decaying echo tail">ECHO OUT</button>
+        </div>
       </div>
 
       <div class="crossfader-wrap">
@@ -959,7 +973,7 @@
         <div class="crossfader-track" id="crossfaderTrack">
           <div class="crossfader-thumb" id="crossfaderThumb"></div>
         </div>
-        <div class="crossfader-hint">Drag right past the glow to crossfade into the next DJ Set song</div>
+        <div class="crossfader-hint">Drag right past the glow to crossfade into the next song in this playlist</div>
       </div>
 
       <div class="record-panel">
@@ -1024,7 +1038,7 @@
   // every time you reopen the page, no re-picking needed.
   let allTracks = [];      // { id, file, name, artist, url, duration }
   let searchQuery = '';    // live search filter, lowercase
-  let playlists = { 'All Songs': [], 'Favorites': [], 'DJ Set': [] }; // name -> array of track ids
+  let playlists = { 'All Songs': [], 'Favorites': [] }; // name -> array of track ids
   let activePlaylist = 'All Songs';
   let hiddenPlaylists = new Set();
   let currentSort = 'default'; // default | alpha | artist | genre | recent
@@ -1580,7 +1594,9 @@
     }));
     playlists = metaMap.playlists || { 'All Songs': allTracks.map(t => t.id) };
     if(!playlists['Favorites']) playlists['Favorites'] = [];
-    if(!playlists['DJ Set']) playlists['DJ Set'] = [];
+    // Note: no longer force-creating a "DJ Set" playlist — DJ Mode now works on
+    // whichever playlist you're already in. Any DJ Set a user made before this
+    // change is left alone (not deleted) since it still shows up like any playlist.
     idCounter = metaMap.idCounter || allTracks.length;
     lastPlaybackState = metaMap.playback || null;
     return true;
@@ -1978,7 +1994,7 @@
       return sum + (t && t.duration ? t.duration : 0);
     }, 0);
     const durLabel = totalSeconds > 0 ? ' · ' + fmtDurationLong(totalSeconds) : '';
-    const canDelete = !isAllSongs && activePlaylist !== 'Favorites' && activePlaylist !== 'DJ Set';
+    const canDelete = !isAllSongs && activePlaylist !== 'Favorites';
     const header = document.createElement('div');
     header.className = 'pane-header';
 
@@ -2157,19 +2173,6 @@
     favBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="${isFav?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.33-8.2C.86 10.1 1.6 6.6 4.5 5.1c2.1-1.08 4.6-.4 6 1.4.5.65.9 1.3 1.5 1.3.6 0 1-.65 1.5-1.3 1.4-1.8 3.9-2.48 6-1.4 2.9 1.5 3.64 5 1.83 7.7C18.7 16.65 12 21 12 21z"/></svg> ${isFav ? 'Remove from Favorites' : 'Add to Favorites'}`;
     favBtn.addEventListener('click', () => { toggleFavorite(id); $('songActionsBackdrop').style.display='none'; });
     list.appendChild(favBtn);
-
-    const isInDjSet = playlists['DJ Set'].includes(id);
-    const djSetBtn = document.createElement('button');
-    djSetBtn.className = isInDjSet ? 'active-fav' : '';
-    djSetBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1014 17V7h4V3h-6z"/></svg> ${isInDjSet ? 'Remove from DJ Set' : 'Add to DJ Set'}`;
-    djSetBtn.addEventListener('click', () => {
-      if(isInDjSet) playlists['DJ Set'] = playlists['DJ Set'].filter(x => x !== id);
-      else playlists['DJ Set'].push(id);
-      saveMeta();
-      toast(isInDjSet ? 'Removed from DJ Set' : 'Added to DJ Set');
-      $('songActionsBackdrop').style.display='none';
-    });
-    list.appendChild(djSetBtn);
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h9v2H4zm0 5h9v2H4zm0 5h6v2H4zM17 6v4h-3l4 5 4-5h-3V6z"/></svg> Play next`;
@@ -3158,7 +3161,7 @@
   // keep acting on whatever's actually playing.
   async function djCrossfadeToNext(){
     if(djCrossfading) return;
-    const ids = playlists['DJ Set'] || [];
+    const ids = playlists[djSourcePlaylist] || [];
     if(!ids.length) return;
     const curIdx = ids.indexOf(djCurrentTrackId);
     let nextIdx = curIdx < 0 ? 0 : curIdx + 1;
@@ -3203,6 +3206,7 @@
         const oldGainNode = deckEngine.gainNode;
         const oldKnobGainNode = deckEngine.knobGainNode;
         const oldFilterNode = deckEngine.filterNode;
+        const oldReverbNodes = deckEngine.reverbNodes;
         deckEngine.buffer = deckEngineB.buffer;
         deckEngine.trackId = deckEngineB.trackId;
         deckEngine.node = deckEngineB.node;
@@ -3214,14 +3218,16 @@
         deckEngine.gainNode.gain.value = 1;
         deckEngine.knobGainNode = deckEngineB.knobGainNode;
         deckEngine.filterNode = null; // filter doesn't carry across a crossfade — fresh track starts flat, splices in again if touched
+        deckEngine.reverbNodes = null; // same for the reverb send
         // Carry the GAIN knob's current dB setting onto whichever node is now live,
         // so the physical slider position stays truthful to what you're hearing.
         if(deckEngine.knobGainNode) deckEngine.knobGainNode.gain.value = Math.pow(10, deckGainDb/20);
 
-        // Retire the old gain/filter nodes (were deck A's) instead of leaving them dangling connected.
+        // Retire the old gain/filter/reverb nodes (were deck A's) instead of leaving them dangling connected.
         if(oldGainNode){ try{ oldGainNode.disconnect(); }catch(e){} }
         if(oldKnobGainNode){ try{ oldKnobGainNode.disconnect(); }catch(e){} }
         if(oldFilterNode){ try{ oldFilterNode.disconnect(); }catch(e){} }
+        if(oldReverbNodes){ try{ oldReverbNodes.convolver.disconnect(); oldReverbNodes.wetGain.disconnect(); }catch(e){} }
 
         deckEngineB.node = null;
         deckEngineB.buffer = null;
@@ -3230,6 +3236,7 @@
         deckEngineB.gainNode = null; // force fresh gain nodes next time deck B is used
         deckEngineB.knobGainNode = null;
         deckEngineB.filterNode = null;
+        deckEngineB.reverbNodes = null;
 
         djCurrentTrackId = nextTrack.id;
         djLastTrackId = null; // force per-track reset (hot cues, kill EQ, loop)
@@ -3425,12 +3432,13 @@
 
   let djLastTrackId = null;
   let djCurrentTrackId = null; // which track is loaded on the deck — independent of the main playback queue
+  let djSourcePlaylist = 'All Songs'; // whichever playlist DJ Mode is browsing/crossfading within — set when DJ Mode opens, changeable via the strip's playlist switcher
 
   function renderDjTrackStrip(){
     const strip = $('djTrackStrip');
-    const ids = playlists['DJ Set'] || [];
+    const ids = playlists[djSourcePlaylist] || [];
     if(!ids.length){
-      strip.innerHTML = `<div class="dj-strip-empty">No songs in your DJ Set yet — tap "+ ADD CURRENT SONG" or add tracks from any song's ⋯ menu.</div>`;
+      strip.innerHTML = `<div class="dj-strip-empty">"${escapeHtml(djSourcePlaylist)}" is empty — pick a different playlist above or add some songs to it first.</div>`;
       return;
     }
     strip.innerHTML = '';
@@ -3442,6 +3450,19 @@
       item.innerHTML = `<div class="stn">${escapeHtml(t.name)}</div><div class="sta">${escapeHtml(t.artist)}</div>`;
       item.addEventListener('click', () => loadTrackIntoDeck(t, false));
       strip.appendChild(item);
+    });
+  }
+
+  function renderDjPlaylistSwitcher(){
+    const sel = $('djPlaylistSwitcher');
+    if(!sel) return;
+    sel.innerHTML = '';
+    Object.keys(playlists).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if(name === djSourcePlaylist) opt.selected = true;
+      sel.appendChild(opt);
     });
   }
 
@@ -3466,8 +3487,8 @@
   }
 
   function djStepTrack(dir){
-    const ids = playlists['DJ Set'] || [];
-    if(!ids.length){ toast('Your DJ Set is empty — add some songs first'); return; }
+    const ids = playlists[djSourcePlaylist] || [];
+    if(!ids.length){ toast(`"${djSourcePlaylist}" is empty`); return; }
     const curIdx = ids.indexOf(djCurrentTrackId);
     let nextIdx = curIdx < 0 ? 0 : curIdx + dir;
     if(nextIdx < 0) nextIdx = ids.length - 1;
@@ -3477,14 +3498,13 @@
   }
   $('djPrevTrackBtn').addEventListener('click', () => djStepTrack(-1));
   $('djNextTrackBtn').addEventListener('click', () => djStepTrack(1));
-  $('djAddCurrentBtn').addEventListener('click', () => {
-    if(!djCurrentTrackId){ toast('Nothing loaded on the deck yet'); return; }
-    if(playlists['DJ Set'].includes(djCurrentTrackId)){ toast('Already in your DJ Set'); return; }
-    playlists['DJ Set'].push(djCurrentTrackId);
-    saveMeta();
-    renderDjTrackStrip();
-    toast('Added to DJ Set');
-  });
+  const djPlaylistSwitcherEl = document.getElementById('djPlaylistSwitcher');
+  if(djPlaylistSwitcherEl){
+    djPlaylistSwitcherEl.addEventListener('change', (e) => {
+      djSourcePlaylist = e.target.value;
+      renderDjTrackStrip();
+    });
+  }
 
   function refreshDjMode(){
     const t = allTracks.find(tr => tr.id === djCurrentTrackId);
@@ -3533,6 +3553,10 @@
     const startFrom = a.currentTime || 0;
     a.pause(); // the real <audio> element goes silent — the deck engine owns sound in DJ Mode
 
+    // DJ Mode operates on whichever playlist you're actually in/playing from —
+    // not a separate hidden "DJ Set". Defaults to wherever the main player's
+    // current queue came from, and can be switched via the strip's dropdown.
+    djSourcePlaylist = (queueSourcePlaylist && playlists[queueSourcePlaylist]) ? queueSourcePlaylist : 'All Songs';
     djCurrentTrackId = t.id;
     djLastTrackId = null; // force the per-track reset path in refreshDjMode
     deckEngine.buffer = null;
@@ -3540,6 +3564,7 @@
     deckEngine.startOffset = startFrom;
     deckEngine.rate = playbackSpeedDJ || 1;
     refreshDjMode();
+    renderDjPlaylistSwitcher();
     renderDjTrackStrip();
     $('djModeBackdrop').style.display = 'flex';
 
@@ -3724,8 +3749,8 @@
       const remaining = dur - deckNow();
       const fadeLen = Math.max(1, crossfadeSeconds || 4);
       if(remaining <= fadeLen && remaining > 0){
-        const ids = playlists['DJ Set'] || [];
-        // Only auto-fade if there's actually something else queued in the DJ Set —
+        const ids = playlists[djSourcePlaylist] || [];
+        // Only auto-fade if there is actually something else in this playlist —
         // otherwise just let the track play out normally.
         if(ids.length > 1) djCrossfadeToNext();
       }
@@ -4164,29 +4189,45 @@
   function attachKnobDrag(knobEl, indicatorEl, opts, onChange){
     const { min, max, initial } = opts;
     let value = initial;
+    const MIN_ANGLE = -135, MAX_ANGLE = 135;
     function angleForValue(v){
       const pct = (v - min) / (max - min); // 0..1
-      return -135 + pct * 270;
+      return MIN_ANGLE + pct * (MAX_ANGLE - MIN_ANGLE);
+    }
+    function valueForAngle(deg){
+      const pct = (deg - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE);
+      return min + Math.max(0, Math.min(1, pct)) * (max - min);
     }
     function render(){
       indicatorEl.style.transform = `translateX(-50%) rotate(${angleForValue(value)}deg)`;
       onChange(value);
     }
+    // True angle-follow: the indicator points directly at your finger's position
+    // relative to the knob's center, like actually grabbing a dial — not a
+    // relative vertical-drag sensitivity you have to fight with.
+    function angleFromPointer(e){
+      const rect = knobEl.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const dx = e.clientX - cx, dy = e.clientY - cy;
+      // Guard against instability when the finger is very close to dead-center —
+      // tiny position noise there would otherwise cause the angle (and value) to
+      // swing wildly. Below this radius, just hold the last angle instead.
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < 12 && knobEl._lastAngle != null) return knobEl._lastAngle;
+      let deg = Math.atan2(dx, -dy) * (180/Math.PI);
+      deg = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, deg));
+      knobEl._lastAngle = deg;
+      return deg;
+    }
     knobEl.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       knobEl.setPointerCapture(e.pointerId);
       knobEl.classList.add('grabbing');
-      let lastY = e.clientY;
-      const range = max - min;
-      // Much larger virtual travel distance than before (280px instead of 150px)
-      // so small, natural thumb movements make small changes — the old version
-      // was roughly 3x too sensitive for a 46px knob, which is what made it feel
-      // fiddly/impossible to land on a precise value.
-      const travel = 280;
+      value = valueForAngle(angleFromPointer(e));
+      render();
       function onMove(ev){
-        const dy = lastY - ev.clientY; // up = increase
-        lastY = ev.clientY;
-        value = Math.max(min, Math.min(max, value + dy * (range/travel)));
+        value = valueForAngle(angleFromPointer(ev));
         render();
       }
       function onUp(ev){
@@ -4254,6 +4295,79 @@
     }
   });
 
+  // ---------------- REVERB knob: a real wet/dry send through a ConvolverNode.
+  // The impulse response is synthesized (exponentially-decaying noise) rather
+  // than loaded from a file, so there's nothing extra to ship.
+  function ensureReverbSend(){
+    if(deckEngine.reverbNodes) return deckEngine.reverbNodes;
+    ensureAudioGraph();
+    const convolver = audioCtx.createConvolver();
+    const len = audioCtx.sampleRate * 2.2;
+    const impulse = audioCtx.createBuffer(2, len, audioCtx.sampleRate);
+    for(let ch=0; ch<2; ch++){
+      const data = impulse.getChannelData(ch);
+      for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.2);
+    }
+    convolver.buffer = impulse;
+    const wetGain = audioCtx.createGain();
+    wetGain.gain.value = 0;
+    // Tap the dry signal post-filter, pre-blend, so reverb hears EQ/kill/filter
+    // changes too, then mix the wet tail back into the same destination the
+    // dry signal already reaches (deck's gain node chain).
+    ensureFilterNode();
+    deckEngine.filterNode.connect(convolver);
+    convolver.connect(wetGain);
+    wetGain.connect(deckEngine.gainNode);
+    deckEngine.reverbNodes = { convolver, wetGain };
+    return deckEngine.reverbNodes;
+  }
+  attachKnobDrag($('reverbKnob'), $('reverbKnob').querySelector('.knob-indicator'), { min:0, max:100, initial:0 }, (v) => {
+    const { wetGain } = ensureReverbSend();
+    wetGain.gain.value = (v/100) * 0.9; // cap wet level so it never fully drowns the dry signal
+    $('reverbReadout').textContent = `${Math.round(v)}%`;
+  });
+
+  // ---------------- Transition FX: TAPE STOP and ECHO OUT, classic ways to end a track ----------------
+  $('tapeStopBtn').addEventListener('click', () => {
+    if(!deckEngine.node || !deckEngine.running){ toast('Nothing playing to stop'); return; }
+    const node = deckEngine.node;
+    const startRate = node.playbackRate.value || 1;
+    const dur = 1.6;
+    try{
+      node.playbackRate.setValueAtTime(startRate, audioCtx.currentTime);
+      node.playbackRate.linearRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+    }catch(e){}
+    toast('Tape stop…');
+    setTimeout(() => { deckPause(); refreshDjMode(); }, dur * 1000 + 80);
+  });
+  $('echoOutBtn').addEventListener('click', () => {
+    if(!deckEngine.node || !deckEngine.running){ toast('Nothing playing to fade'); return; }
+    ensureAudioGraph();
+    const delay = audioCtx.createDelay(1.5);
+    delay.delayTime.value = 0.28;
+    const feedback = audioCtx.createGain();
+    feedback.gain.value = 0.55;
+    const wetGain = audioCtx.createGain();
+    wetGain.gain.value = 0;
+    ensureFilterNode();
+    deckEngine.filterNode.connect(delay);
+    delay.connect(feedback).connect(delay); // feedback loop = the decaying echo tail
+    delay.connect(wetGain).connect(deckEngine.gainNode);
+    const t0 = audioCtx.currentTime;
+    wetGain.gain.setValueAtTime(0.7, t0);
+    deckEngine.knobGainNode.gain.setValueAtTime(deckEngine.knobGainNode.gain.value, t0);
+    deckEngine.knobGainNode.gain.linearRampToValueAtTime(0, t0 + 1.8); // dry signal fades out
+    wetGain.gain.linearRampToValueAtTime(0, t0 + 3.2); // echo tail rings out a bit longer
+    toast('Echoing out…');
+    setTimeout(() => {
+      deckPause();
+      try{ delay.disconnect(); feedback.disconnect(); wetGain.disconnect(); }catch(e){}
+      // Restore dry gain for whatever plays next.
+      if(deckEngine.knobGainNode) deckEngine.knobGainNode.gain.value = Math.pow(10, deckGainDb/20);
+      refreshDjMode();
+    }, 3300);
+  });
+
   // Crossfader: purely a feel/visual control here — dragging hard toward "next"
   // triggers the existing crossfade engine early, same blend logic already in use.
   attachFaderDrag2Axis();
@@ -4295,9 +4409,9 @@
     track.addEventListener('lostpointercapture', reset);
   }
   function attemptDjCrossfade(){
-    const ids = playlists['DJ Set'] || [];
+    const ids = playlists[djSourcePlaylist] || [];
     if(ids.length < 2){
-      toast('Add at least 2 songs to your DJ Set to crossfade between them');
+      toast(`Add at least 2 songs to "${djSourcePlaylist}" to crossfade between them`);
       return;
     }
     djCrossfadeToNext();
