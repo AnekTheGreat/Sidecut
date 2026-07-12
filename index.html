@@ -265,6 +265,15 @@
   .tempo-readout{ display:flex; align-items:center; gap:8px; }
   #bpmReadout{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--coral); font-weight:700; }
   .fx-pad-row{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .drum-pad-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+  .drum-pad{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:12px 4px; border-radius:9px; border:1px solid rgba(255,255,255,0.1);
+    background:#1c2a26; color:var(--ink-dim); cursor:pointer; font-size:18px;
+    touch-action:manipulation;
+  }
+  .drum-pad span{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.5px; color:var(--ink-dim); }
+  .drum-pad.firing{ background: color-mix(in srgb, #3fcf6e 40%, #1c2a26); border-color:#3fcf6e; transform:scale(0.96); }
   .fx-pad{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
     padding:10px 4px; border-radius:9px; border:1px solid rgba(255,255,255,0.1);
@@ -849,6 +858,22 @@
         <button class="hotcue-btn" data-slot="1">2</button>
         <button class="hotcue-btn" data-slot="2">3</button>
         <button class="hotcue-btn" data-slot="3">4</button>
+      </div>
+
+      <div class="fx-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="section-label">BEAT PAD</span>
+        </div>
+        <div class="drum-pad-grid" id="drumPadGrid">
+          <button class="drum-pad" data-drum="kick">🥁<span>KICK</span></button>
+          <button class="drum-pad" data-drum="snare">🪘<span>SNARE</span></button>
+          <button class="drum-pad" data-drum="hihat">🎩<span>HI-HAT</span></button>
+          <button class="drum-pad" data-drum="ohihat">🔔<span>OPEN HAT</span></button>
+          <button class="drum-pad" data-drum="clap">👏<span>CLAP</span></button>
+          <button class="drum-pad" data-drum="rim">📍<span>RIM</span></button>
+          <button class="drum-pad" data-drum="tom">🛢️<span>TOM</span></button>
+          <button class="drum-pad" data-drum="crash">💿<span>CRASH</span></button>
+        </div>
       </div>
 
       <div class="fx-section">
@@ -3719,6 +3744,112 @@
     noise.connect(hp).connect(g).connect(dest);
     noise.start(t0); noise.stop(t0 + dur);
   }
+  // ---------------- Beat pad: an actual drum-pad grid you tap to play sounds live over the track ----------------
+  // Each hit builds fresh nodes so rapid/overlapping taps (rolls, double-kicks)
+  // work naturally — nothing to "reset" between hits, unlike a single shared node.
+  function playKick(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t0);
+    osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.15);
+    g.gain.setValueAtTime(0.9, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0 + 0.36);
+  }
+  function playSnare(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const bufSize = ctx.sampleRate * 0.2;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 1.5);
+    const noise = ctx.createBufferSource(); noise.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 900;
+    const gNoise = ctx.createGain(); gNoise.gain.setValueAtTime(0.7, t0); gNoise.gain.exponentialRampToValueAtTime(0.001, t0+0.2);
+    noise.connect(hp).connect(gNoise).connect(dest);
+    noise.start(t0);
+    const osc = ctx.createOscillator(); const gTone = ctx.createGain();
+    osc.type='triangle'; osc.frequency.setValueAtTime(180, t0);
+    gTone.gain.setValueAtTime(0.5, t0); gTone.gain.exponentialRampToValueAtTime(0.001, t0+0.12);
+    osc.connect(gTone).connect(dest);
+    osc.start(t0); osc.stop(t0+0.13);
+  }
+  function playHihat(open){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const dur = open ? 0.35 : 0.06;
+    const bufSize = ctx.sampleRate * dur;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, open ? 1.2 : 3);
+    const noise = ctx.createBufferSource(); noise.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 7000;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.35, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    noise.connect(hp).connect(g).connect(dest);
+    noise.start(t0);
+  }
+  function playClap(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    [0, 0.02, 0.04].forEach(delay => {
+      const bufSize = ctx.sampleRate * 0.08;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 2);
+      const noise = ctx.createBufferSource(); noise.buffer = buf;
+      const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = 1200; bp.Q.value = 1.2;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.5, t0+delay); g.gain.exponentialRampToValueAtTime(0.001, t0+delay+0.08);
+      noise.connect(bp).connect(g).connect(dest);
+      noise.start(t0+delay);
+    });
+  }
+  function playRim(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type='square'; osc.frequency.setValueAtTime(900, t0);
+    g.gain.setValueAtTime(0.4, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.05);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0+0.06);
+  }
+  function playTom(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type='sine'; osc.frequency.setValueAtTime(220, t0);
+    osc.frequency.exponentialRampToValueAtTime(90, t0+0.25);
+    g.gain.setValueAtTime(0.7, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.35);
+    osc.connect(g).connect(dest);
+    osc.start(t0); osc.stop(t0+0.36);
+  }
+  function playCrash(){
+    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
+    const bufSize = ctx.sampleRate * 1.2;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 0.7);
+    const noise = ctx.createBufferSource(); noise.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 5000;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.4, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+1.2);
+    noise.connect(hp).connect(g).connect(dest);
+    noise.start(t0);
+  }
+  const DRUM_HANDLERS = {
+    kick: playKick, snare: playSnare, hihat: () => playHihat(false), ohihat: () => playHihat(true),
+    clap: playClap, rim: playRim, tom: playTom, crash: playCrash,
+  };
+  document.querySelectorAll('.drum-pad').forEach(btn => {
+    function fire(e){
+      e.preventDefault();
+      ensureAudioGraph();
+      if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+      const drum = btn.dataset.drum;
+      if(DRUM_HANDLERS[drum]) DRUM_HANDLERS[drum]();
+      btn.classList.add('firing');
+      setTimeout(() => btn.classList.remove('firing'), 110);
+      if(navigator.vibrate) navigator.vibrate(6);
+    }
+    // pointerdown (not click) so pads respond instantly and support fast rolls/repeated hits.
+    btn.addEventListener('pointerdown', fire);
+  });
+
   const FX_HANDLERS = {
     airhorn: playAirhorn, siren: playSiren, riser: playRiser,
     scratchstab: playScratchStab, explosion: playExplosion, reverse: playReverseFx,
