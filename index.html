@@ -86,34 +86,66 @@
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
-  /* ---------- DJ Mode: real turntable rig ---------- */
+  /* ---------- DJ Mode: real turntable rig, styled with genuine 3D depth ---------- */
+  .deck-stage{
+    perspective: 900px; width:100%; max-width:340px; margin:6px auto 4px;
+  }
   .deck-body{
-    position:relative; width:100%; max-width:340px; margin:6px auto 4px;
-    padding:20px 20px 26px;
+    position:relative; width:100%;
+    padding:22px 20px 30px;
     background:
-      linear-gradient(160deg, #35322c, #1c1a16 60%, #121110);
-    border-radius:16px;
-    box-shadow: 0 20px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.5);
+      linear-gradient(160deg, #3d3a33, #211f1a 55%, #131210);
+    border-radius:18px;
+    transform: rotateX(8deg);
+    transform-style: preserve-3d;
+    /* Multiple stacked shadows at increasing offsets/blur simulate a real cast
+       shadow falling away from a tilted, physically-deep object, rather than
+       the flat single drop-shadow a 2D card normally gets. */
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.55),
+      0 8px 10px rgba(0,0,0,0.35),
+      0 22px 30px rgba(0,0,0,0.45),
+      0 40px 60px rgba(0,0,0,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -2px 0 rgba(0,0,0,0.4),
+      inset 0 0 0 1px rgba(0,0,0,0.5);
+  }
+  /* A visible beveled top edge along the chassis, like the lip of a real turntable case */
+  .deck-body::before{
+    content:''; position:absolute; top:0; left:14px; right:14px; height:2px; border-radius:2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    pointer-events:none;
   }
   .deck-brand{
-    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:#8a8577;
-    text-align:left; margin-bottom:10px; opacity:0.8;
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:#a29c8c;
+    text-align:left; margin-bottom:10px; opacity:0.85; text-shadow:0 1px 0 rgba(0,0,0,0.5);
   }
   .platter-wrap{
     position:relative; width:100%; aspect-ratio:1/1; margin:0 auto;
+    transform: translateZ(6px);
+    transform-style: preserve-3d;
   }
   .platter{
     position:relative; width:100%; height:100%; border-radius:50%;
     touch-action: none;
-    background: radial-gradient(circle, #2b2b2b 0%, #1c1c1c 70%, #141414 100%);
-    box-shadow: inset 0 0 22px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+    transform-style: preserve-3d;
+    background: radial-gradient(circle at 42% 38%, #333 0%, #202020 55%, #131313 100%);
+    /* Deep inset ring plus a bright thin rim highlight along the top-left,
+       like a light source grazing a physically raised metal disc. */
+    box-shadow:
+      inset 0 0 26px rgba(0,0,0,0.75),
+      inset 0 2px 3px rgba(255,255,255,0.06),
+      0 1px 0 rgba(255,255,255,0.08),
+      0 10px 18px rgba(0,0,0,0.55),
+      0 0 0 3px rgba(0,0,0,0.5);
     display:flex; align-items:center; justify-content:center;
   }
   /* subtle ridge lines like a real platter mat */
   .platter::before{
     content:''; position:absolute; inset:6%; border-radius:50%;
     background:
-      repeating-radial-gradient(circle at center, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 5px);
+      repeating-radial-gradient(circle at center, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 5px);
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.5);
     pointer-events:none;
   }
   .platter-ring-markers{
@@ -127,52 +159,65 @@
     width:82%; height:82%; border-radius:50%; position:relative;
     touch-action:none;
     background:
-      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 30%),
-      repeating-radial-gradient(circle at center, #101414 0, #101414 1.4px, #1a1e1e 1.4px, #1a1e1e 2.8px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+      radial-gradient(circle at 32% 26%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 26%),
+      repeating-radial-gradient(circle at center, #0d1111 0, #0d1111 1.4px, #191d1d 1.4px, #191d1d 2.8px);
+    /* Record sits visibly ABOVE the platter mat — a real disc casts its own
+       shadow onto the mat beneath it and catches a rim-light along one edge. */
+    box-shadow:
+      0 3px 3px rgba(0,0,0,0.4),
+      0 10px 20px rgba(0,0,0,0.55),
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      inset 2px 2px 4px rgba(255,255,255,0.04);
     display:flex; align-items:center; justify-content:center;
     animation: spin 1.8s linear infinite; animation-play-state: paused;
   }
   .deck-disc.spinning{ animation-play-state: running; }
   .deck-disc-label{
     width:34%; height:34%; border-radius:50%; position:relative; z-index:1;
-    background: radial-gradient(circle at 35% 30%, var(--gold), var(--coral) 75%);
+    background: radial-gradient(circle at 32% 26%, var(--gold), var(--coral) 75%);
     background-size:cover; background-position:center;
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.55), inset 0 0 6px rgba(0,0,0,0.3);
+    box-shadow:
+      0 0 0 2px rgba(0,0,0,0.6),
+      inset 0 0 8px rgba(0,0,0,0.35),
+      inset 2px 2px 5px rgba(255,255,255,0.18);
     display:flex; align-items:center; justify-content:center;
   }
   .deck-disc-label::after{
     content:''; width:14%; height:14%; border-radius:50%; background:#0A0D0E;
-    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25);
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25), inset 0 1px 2px rgba(0,0,0,0.6);
   }
   .spindle{
     position:absolute; top:50%; left:50%; width:5%; height:5%; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #ddd, #888);
-    transform: translate(-50%,-50%); z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.6);
+    background: radial-gradient(circle at 35% 30%, #f0f0f0, #888);
+    transform: translate(-50%,-50%) translateZ(8px); z-index:5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.7), inset 0 -1px 1px rgba(0,0,0,0.3);
   }
   .tonearm-base{
     position:absolute; top:6%; right:5%; width:15%; height:15%; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #4a4a4a, #232323);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.06);
-    z-index:7;
+    background: radial-gradient(circle at 32% 26%, #5a5a5a, #232323);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,0.6),
+      inset 0 0 0 1px rgba(255,255,255,0.1),
+      inset 1px 1px 2px rgba(255,255,255,0.15);
+    z-index:7; transform: translateZ(10px);
   }
   .tonearm{
     position:absolute; top:calc(6% + 6px); right:calc(5% + 6px); width:46%; height:5px;
     transform-origin: 92% 50%;
-    transform: rotate(-26deg);
+    transform: rotate(-26deg) translateZ(14px);
     transition: transform 0.6s cubic-bezier(0.34, 1.1, 0.6, 1);
     z-index:8;
   }
   .deck-disc.spinning ~ .tonearm,
-  .platter.playing .tonearm{ transform: rotate(9deg); }
+  .platter.playing .tonearm{ transform: rotate(9deg) translateZ(14px); }
   .tonearm-shaft{
     position:absolute; top:0; left:0; width:100%; height:100%; border-radius:3px;
-    background: linear-gradient(90deg, #cfc0a0, #9c8560);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    background: linear-gradient(180deg, #e8dcc0, #cfc0a0 45%, #9c8560);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
   }
   .tonearm-head{
     position:absolute; left:-8%; top:-140%; width:16%; height:9px; border-radius:2px;
-    background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
+    background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 2px 3px rgba(0,0,0,0.5);
   }
   .tonearm-head::after{
     content:''; position:absolute; left:8%; bottom:-4px; width:6%; height:5px; border-radius:1px;
@@ -587,10 +632,26 @@
     <div><h1>SideCut</h1><span>your files · no ads, ever</span></div>
   </div>
   <div style="display:flex; gap:6px;">
+    <button class="icon-btn" id="notifBtn" title="Notifications" style="position:relative;">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      <span id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--coral); box-shadow:0 0 0 2px var(--bg);"></span>
+    </button>
     <button class="icon-btn" id="statsBtn" title="Stats"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
     <button class="icon-btn" id="themeBtn" title="Settings"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 00.12-.61l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.62-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 00-.6.22L2.66 8.87a.5.5 0 00.12.61l2.03 1.58c-.05.3-.08.61-.08.94s.02.64.07.94l-2.03 1.58a.5.5 0 00-.12.61l1.92 3.32c.12.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.49 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.61l-2.03-1.58zM12 15.6a3.6 3.6 0 110-7.2 3.6 3.6 0 010 7.2z"/></svg></button>
   </div>
 </header>
+
+<!-- Notifications panel -->
+<div class="modal-backdrop" id="notifBackdrop">
+  <div class="modal">
+    <h3>Notifications</h3>
+    <div id="notifBody" style="display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
+    <div class="modal-btns">
+      <button class="cancel" id="notifClose" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="action-strip" id="actionStrip">
   <button id="addFolderBtn" class="action-pill primary">+ Add folder</button>
   <button id="addBtn" class="action-pill">+ Files</button>
@@ -818,7 +879,7 @@
 
       <div style="margin-top:12px;">
         <button class="playlist-pick-btn" id="viewUpdateLogBtn" style="text-align:center;">Update log</button>
-        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;" id="currentVersionLabel">SideCut v28</div>
+        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;" id="currentVersionLabel">SideCut v29</div>
       </div>
     </div>
 
@@ -878,6 +939,7 @@
       <div class="dj-track-strip" id="djTrackStrip"></div>
     </div>
 
+    <div class="deck-stage">
     <div class="deck-body">
       <div class="deck-brand">SIDECUT · SL-1200 STYLE DIRECT DRIVE</div>
       <div class="platter-wrap">
@@ -1075,6 +1137,7 @@
         <div style="font-size:10.5px; color:var(--ink-dim); margin-top:6px;">Records everything you hear on this deck — scratches, EQ, pitch, all of it.</div>
       </div>
     </div>
+    </div>
 
     <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Grab the record to scratch — release to resume at pitch speed. Tap a cue pad to set it, hold to jump back to it.</div>
     <div class="modal-btns">
@@ -1089,7 +1152,7 @@
     <div style="display:flex; align-items:center; gap:10px;">
       <div class="brand-mark" style="width:26px; height:26px;"></div>
       <div>
-        <h3 id="whatsNewVersion" style="font-size:17px;">What's new in v28</h3>
+        <h3 id="whatsNewVersion" style="font-size:17px;">What's new in v29</h3>
         <div style="font-size:11.5px; color:var(--ink-dim);">SideCut update</div>
       </div>
     </div>
@@ -1586,8 +1649,13 @@
   // time a real update ships. Minor/patch updates (bug fixes, small tweaks) use
   // a decimal like 27.5; bigger feature updates bump the whole number. This is
   // also what the service worker's cache name should track alongside.
-  const APP_VERSION = '28';
+  const APP_VERSION = '29';
   const CHANGELOG = [
+    { version: '29', title: 'Notification bell + 3D turntable', items: [
+      'Added a notification bell in the header — badges when there\'s something new, tap to see the full update history',
+      'Update popup now appears a beat after load instead of stacking instantly with other startup messages',
+      'DJ Mode turntable rebuilt with real 3D depth — tilt, layered shadows, beveled chassis, glossy highlights',
+    ]},
     { version: '28', title: 'Update log system + real reverb + more DJ tools', items: [
       'New: a "what\'s new" popup on every update, plus a full Update Log in Settings',
       'Fixed REVERB knob — it barely did anything before, now has a genuine audible tail',
@@ -1652,10 +1720,9 @@
   async function checkForUpdatePopup(){
     try{
       const metaRows = await dbGetAll('meta');
-      const lastSeenRow = metaRows.find(r => r.key === 'lastSeenVersion');
-      const lastSeen = lastSeenRow ? lastSeenRow.value : null;
-      if(lastSeen === APP_VERSION) return; // already seen this version's popup
-      if(lastSeen != null){
+      const lastPopupRow = metaRows.find(r => r.key === 'lastSeenVersion');
+      const lastPopupSeen = lastPopupRow ? lastPopupRow.value : null;
+      if(lastPopupSeen !== APP_VERSION && lastPopupSeen != null){
         // Only pop up when actually upgrading from a previously-seen version —
         // a brand new install has nothing to compare "what's new" against.
         const entry = CHANGELOG.find(e => e.version === APP_VERSION);
@@ -1666,8 +1733,43 @@
         }
       }
       dbPut('meta', { key: 'lastSeenVersion', value: APP_VERSION });
+      updateNotifBadge();
     }catch(e){ /* not critical if this fails */ }
   }
+
+  // ---------------- Notification bell: separate from the popup — stays badged
+  // until you actually open the bell, even if you already dismissed the popup.
+  let notifLastReadVersion = null;
+  async function loadNotifReadState(){
+    const metaRows = await dbGetAll('meta');
+    const row = metaRows.find(r => r.key === 'notifLastReadVersion');
+    notifLastReadVersion = row ? row.value : null;
+  }
+  function updateNotifBadge(){
+    const badge = $('notifBadge');
+    if(!badge) return;
+    badge.style.display = (notifLastReadVersion !== APP_VERSION) ? 'block' : 'none';
+  }
+  function renderNotifPanel(){
+    const body = $('notifBody');
+    body.innerHTML = CHANGELOG.map(entry => `
+      <div style="border-bottom:1px solid var(--line); padding-bottom:10px;">
+        <div style="font-weight:600; font-size:13.5px; margin-bottom:6px;">v${entry.version} — ${escapeHtml(entry.title)}</div>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--ink-dim);">
+          ${entry.items.map(i => `<div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>${escapeHtml(i)}</span></div>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  $('notifBtn').addEventListener('click', () => {
+    renderNotifPanel();
+    $('notifBackdrop').style.display = 'flex';
+    notifLastReadVersion = APP_VERSION;
+    dbPut('meta', { key: 'notifLastReadVersion', value: APP_VERSION });
+    updateNotifBadge();
+  });
+  $('notifClose').addEventListener('click', () => { $('notifBackdrop').style.display = 'none'; });
+  $('notifBackdrop').addEventListener('click', e => { if(e.target === $('notifBackdrop')) $('notifBackdrop').style.display = 'none'; });
 
   let idCounter = 0;
   let isMixMode = false;
@@ -5224,6 +5326,8 @@
   (async function boot(){
     try{
       $('currentVersionLabel').textContent = `SideCut v${APP_VERSION}`;
+      await loadNotifReadState();
+      updateNotifBadge();
       await loadSavedTheme();
       const loaded = await loadFromDB();
       if(loaded){
@@ -5238,7 +5342,10 @@
         toast(`Welcome back — ${allTracks.length} track${allTracks.length===1?'':'s'} loaded`);
         restorePlaybackState();
       }
-      await checkForUpdatePopup();
+      // Small delay so the "what's new" popup reads as a deliberate moment
+      // once the library/UI has settled, rather than flashing in instantly
+      // alongside other boot toasts and getting dismissed on reflex.
+      setTimeout(() => { checkForUpdatePopup(); }, 900);
     }catch(e){
       console.error('Auto-load failed', e);
     }
