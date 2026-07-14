@@ -491,67 +491,49 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-  #npPlayerStage{
-    perspective: 300px; flex-shrink:0;
-  }
-  /* Side-view turntable: seen from the side, so the record reads as a thin
-     disc viewed edge-on (an ellipse, like a coin tilted almost flat) sitting
-     on top of a low plinth, with the tonearm reaching in from the right at
-     height — this is a genuine side profile, not a top-down view tilted a bit. */
+#npPlayerStage{ perspective: 260px; flex-shrink:0; }
   #npPlayerBody{
-    position:relative; width:64px; height:44px; flex-shrink:0;
-    display:flex; align-items:flex-end; justify-content:center; cursor:pointer; touch-action:none;
+    position:relative; width:52px; height:52px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;
+    transform-style:preserve-3d;
   }
-  /* The plinth: a low, wide box seen from the side */
   #npPlayerBody::after{
-    content:''; position:absolute; bottom:0; left:2px; right:2px; height:14px; border-radius:4px;
+    content:''; position:absolute; bottom:-4px; left:4px; right:0px; height:10px; border-radius:6px;
     background: linear-gradient(180deg, #3d3a33, #1a1815);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 0 rgba(0,0,0,0.4);
-    z-index:1;
+    box-shadow: 0 3px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
+    transform: rotateX(60deg);
+    z-index:0;
   }
   #npPlatterRing{
-    position:absolute; bottom:11px; left:50%; width:50px; height:14px;
-    transform: translateX(-50%) rotateX(60deg) rotateY(-25deg);
+    position:relative; width:48px; height:48px; margin:0 auto;
+    transform: rotateX(48deg) rotateZ(-18deg);
     transform-style: preserve-3d;
     border-radius:50%;
-    background: radial-gradient(ellipse at 40% 35%, #333 0%, #1c1c1c 70%, #101010 100%);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 0 4px rgba(0,0,0,0.6);
+    background: radial-gradient(circle at 38% 32%, #3a3a3a 0%, #1c1c1c 70%, #101010 100%);
+    box-shadow: 0 5px 8px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.6);
     display:flex; align-items:center; justify-content:center;
     z-index:2;
   }
-  /* The record itself, seen edge-on: flattened into an ellipse by the same
-     rotateX as the platter, with a visible rim-thickness shadow so it reads
-     as a real disc with depth, not a flat painted circle. */
   #nowPlaying .disc{
-    width:44px; height:44px; border-width:1.5px; position:relative;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.5), 0 3px 5px rgba(0,0,0,0.5), inset 2px 2px 3px rgba(255,255,255,0.05);
+    width:48px; height:48px; border-width:1.5px; position:relative;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 2px 2px 4px rgba(255,255,255,0.06);
   }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
-  #nowPlaying .disc::after{ width:5px; height:5px; }
-  /* Tonearm reaches in from the right at height, above the record's edge —
-     the defining silhouette of a turntable viewed from the side. */
+  #nowPlaying .disc::after{ width:6px; height:6px; }
   #npMiniTonearm{
-    position:absolute; top:2px; right:2px; width:30px; height:2.5px; border-radius:2px;
-    background: linear-gradient(180deg, #e8dcc0, #cfc0a0 50%, #9c8560); transform-origin: 95% 50%;
-    transform: rotate(-18deg); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:5;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
+    position:absolute; top:-2px; right:-8px; width:32px; height:3px; border-radius:2px;
+    background: linear-gradient(90deg, #e8dcc0, #cfc0a0 55%, #9c8560); transform-origin: 92% 50%;
+    transform: rotate(-22deg) rotateX(48deg); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:5;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
   }
-  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(4deg); }
+  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(6deg) rotateX(48deg); }
   #npMiniTonearm::before{
-    content:''; position:absolute; right:-5px; top:-5px; width:11px; height:11px; border-radius:50%;
+    content:''; position:absolute; right:-6px; top:-6px; width:12px; height:12px; border-radius:50%;
     background: radial-gradient(circle at 35% 30%, #5a5a5a, #232323);
     box-shadow:0 2px 3px rgba(0,0,0,0.5), inset 1px 1px 1px rgba(255,255,255,0.15);
   }
-  #npMiniTonearm::after{ content:''; position:absolute; left:-2px; top:0.5px; width:4px; height:3px; background:#111; border-radius:1px; }
-  /* A support post connecting the tonearm base down to the plinth, visible
-     only from the side — this is what makes it read as a real 3D object
-     rather than a flat decal floating over the record. */
-  #npPlayerBody .tonearm-post{
-    position:absolute; top:8px; right:5px; width:3px; height:14px;
-    background: linear-gradient(180deg, #4a4a4a, #232323);
-    box-shadow: 1px 0 0 rgba(255,255,255,0.08);
-    z-index:4;
-  }
+  #npMiniTonearm::after{ content:''; position:absolute; left:-2px; top:0.5px; width:5px; height:4px; background:#111; border-radius:1px; }
+  #npPlayerBody .tonearm-post{ display:none; }
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
   #npInfo .t{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #npInfo .a{ font-size:11.5px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -4361,7 +4343,152 @@
     requestAnimationFrame(djAutoCrossfadeWatcher);
   }
   djAutoCrossfadeWatcher();
-
+// ---------------- Pad sound engine (v32 — synthesized, the old sample system was never defined) ----------------
+  const DRUM_SAMPLE_PATHS = {};
+  const FX_SAMPLE_PATHS = {};
+  function preloadAllPadSamples(){ /* synths need no preloading */ }
+  function playSamplePad(paths, key){
+    ensureAudioGraph();
+    if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    const dest = fxDestination();
+    const t0 = audioCtx.currentTime;
+    function noiseBuffer(dur){
+      const buf = audioCtx.createBuffer(1, Math.max(1,Math.floor(audioCtx.sampleRate*dur)), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+      return buf;
+    }
+    function env(g, dur, peak){
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(peak, t0+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    }
+    const g = audioCtx.createGain();
+    g.connect(dest);
+    switch(key){
+      case 'kick': {
+        const o=audioCtx.createOscillator(); o.type='sine';
+        o.frequency.setValueAtTime(150,t0); o.frequency.exponentialRampToValueAtTime(45,t0+0.15);
+        env(g,0.35,1); o.connect(g); o.start(t0); o.stop(t0+0.35);
+        break;
+      }
+      case 'snare': {
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(0.2);
+        const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1500;
+        env(g,0.18,0.8); s.connect(hp).connect(g); s.start(t0);
+        const o=audioCtx.createOscillator(); o.type='triangle'; o.frequency.value=180;
+        const g2=audioCtx.createGain(); env(g2,0.12,0.5); o.connect(g2).connect(dest); o.start(t0); o.stop(t0+0.12);
+        break;
+      }
+      case 'hihat': case 'ohihat': case 'shaker': {
+        const dur = key==='ohihat'?0.35:(key==='shaker'?0.18:0.08);
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(dur);
+        const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+        env(g,dur,0.5); s.connect(hp).connect(g); s.start(t0);
+        break;
+      }
+      case 'clap': {
+        for(let i=0;i<3;i++){
+          const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(0.08);
+          const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200;
+          const gg=audioCtx.createGain();
+          gg.gain.setValueAtTime(0.0001,t0+i*0.015);
+          gg.gain.linearRampToValueAtTime(0.6,t0+i*0.015+0.005);
+          gg.gain.exponentialRampToValueAtTime(0.0001,t0+i*0.015+0.09);
+          s.connect(bp).connect(gg).connect(dest); s.start(t0+i*0.015);
+        }
+        break;
+      }
+      case 'rim': case 'woodblock': case 'cowbell': {
+        const freq = key==='rim'?900:(key==='woodblock'?1500:800);
+        const o=audioCtx.createOscillator(); o.type='square'; o.frequency.value=freq;
+        env(g,0.1,0.4); o.connect(g); o.start(t0); o.stop(t0+0.1);
+        break;
+      }
+      case 'tom': {
+        const o=audioCtx.createOscillator(); o.type='sine';
+        o.frequency.setValueAtTime(220,t0); o.frequency.exponentialRampToValueAtTime(90,t0+0.25);
+        env(g,0.3,0.8); o.connect(g); o.start(t0); o.stop(t0+0.3);
+        break;
+      }
+      case 'crash': {
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(1.2);
+        const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=4000;
+        env(g,1.2,0.5); s.connect(hp).connect(g); s.start(t0);
+        break;
+      }
+      case 'subboom': {
+        const o=audioCtx.createOscillator(); o.type='sine';
+        o.frequency.setValueAtTime(80,t0); o.frequency.exponentialRampToValueAtTime(30,t0+0.6);
+        env(g,0.7,1); o.connect(g); o.start(t0); o.stop(t0+0.7);
+        break;
+      }
+      case 'airhorn': {
+        const o=audioCtx.createOscillator(); o.type='sawtooth'; o.frequency.value=350;
+        env(g,0.8,0.5); o.connect(g); o.start(t0); o.stop(t0+0.8);
+        break;
+      }
+      case 'siren': {
+        const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(400,t0);
+        for(let i=0;i<4;i++){
+          o.frequency.linearRampToValueAtTime(900,t0+0.3+i*0.6);
+          o.frequency.linearRampToValueAtTime(400,t0+0.6+i*0.6);
+        }
+        env(g,2.4,0.4); o.connect(g); o.start(t0); o.stop(t0+2.4);
+        break;
+      }
+      case 'riser': {
+        const o=audioCtx.createOscillator(); o.type='sawtooth';
+        o.frequency.setValueAtTime(100,t0); o.frequency.exponentialRampToValueAtTime(2000,t0+1.5);
+        env(g,1.5,0.35); o.connect(g); o.start(t0); o.stop(t0+1.5);
+        break;
+      }
+      case 'scratchstab': {
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(0.15);
+        const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=2000;
+        env(g,0.15,0.6); s.connect(bp).connect(g); s.start(t0);
+        break;
+      }
+      case 'reverse': {
+        const o=audioCtx.createOscillator(); o.type='sawtooth';
+        o.frequency.setValueAtTime(1500,t0); o.frequency.exponentialRampToValueAtTime(120,t0+0.8);
+        g.gain.setValueAtTime(0.0001,t0);
+        g.gain.exponentialRampToValueAtTime(0.5,t0+0.75);
+        g.gain.linearRampToValueAtTime(0.0001,t0+0.8);
+        o.connect(g); o.start(t0); o.stop(t0+0.8);
+        break;
+      }
+      case 'explosion': {
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(1.0);
+        const lp=audioCtx.createBiquadFilter(); lp.type='lowpass';
+        lp.frequency.setValueAtTime(3000,t0); lp.frequency.exponentialRampToValueAtTime(200,t0+1.0);
+        env(g,1.0,0.9); s.connect(lp).connect(g); s.start(t0);
+        break;
+      }
+      case 'laser': {
+        const o=audioCtx.createOscillator(); o.type='square';
+        o.frequency.setValueAtTime(2000,t0); o.frequency.exponentialRampToValueAtTime(200,t0+0.25);
+        env(g,0.25,0.35); o.connect(g); o.start(t0); o.stop(t0+0.25);
+        break;
+      }
+      case 'vinylbrake': {
+        const o=audioCtx.createOscillator(); o.type='sawtooth';
+        o.frequency.setValueAtTime(300,t0); o.frequency.exponentialRampToValueAtTime(30,t0+1.0);
+        env(g,1.0,0.5); o.connect(g); o.start(t0); o.stop(t0+1.0);
+        break;
+      }
+      case 'crowdcheer': {
+        const s=audioCtx.createBufferSource(); s.buffer=noiseBuffer(2.0);
+        const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1000; bp.Q.value=0.5;
+        env(g,2.0,0.4); s.connect(bp).connect(g); s.start(t0);
+        break;
+      }
+      default: {
+        const o=audioCtx.createOscillator(); o.frequency.value=440;
+        env(g,0.15,0.4); o.connect(g); o.start(t0); o.stop(t0+0.15);
+      }
+    }
+  }
   // ---------------- FX pads: real recorded one-shots (via the sample engine below) ----------------
   function fxDestination(){
     ensureAudioGraph();
