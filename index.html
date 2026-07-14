@@ -86,66 +86,34 @@
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
-  /* ---------- DJ Mode: real turntable rig, styled with genuine 3D depth ---------- */
-  .deck-stage{
-    perspective: 900px; width:100%; max-width:340px; margin:6px auto 4px;
-  }
+  /* ---------- DJ Mode: real turntable rig ---------- */
   .deck-body{
-    position:relative; width:100%;
-    padding:22px 20px 30px;
+    position:relative; width:100%; max-width:340px; margin:6px auto 4px;
+    padding:20px 20px 26px;
     background:
-      linear-gradient(160deg, #3d3a33, #211f1a 55%, #131210);
-    border-radius:18px;
-    transform: rotateX(8deg);
-    transform-style: preserve-3d;
-    /* Multiple stacked shadows at increasing offsets/blur simulate a real cast
-       shadow falling away from a tilted, physically-deep object, rather than
-       the flat single drop-shadow a 2D card normally gets. */
-    box-shadow:
-      0 2px 0 rgba(0,0,0,0.55),
-      0 8px 10px rgba(0,0,0,0.35),
-      0 22px 30px rgba(0,0,0,0.45),
-      0 40px 60px rgba(0,0,0,0.35),
-      inset 0 1px 0 rgba(255,255,255,0.12),
-      inset 0 -2px 0 rgba(0,0,0,0.4),
-      inset 0 0 0 1px rgba(0,0,0,0.5);
-  }
-  /* A visible beveled top edge along the chassis, like the lip of a real turntable case */
-  .deck-body::before{
-    content:''; position:absolute; top:0; left:14px; right:14px; height:2px; border-radius:2px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-    pointer-events:none;
+      linear-gradient(160deg, #35322c, #1c1a16 60%, #121110);
+    border-radius:16px;
+    box-shadow: 0 20px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.5);
   }
   .deck-brand{
-    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:#a29c8c;
-    text-align:left; margin-bottom:10px; opacity:0.85; text-shadow:0 1px 0 rgba(0,0,0,0.5);
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:#8a8577;
+    text-align:left; margin-bottom:10px; opacity:0.8;
   }
   .platter-wrap{
     position:relative; width:100%; aspect-ratio:1/1; margin:0 auto;
-    transform: translateZ(6px);
-    transform-style: preserve-3d;
   }
   .platter{
     position:relative; width:100%; height:100%; border-radius:50%;
     touch-action: none;
-    transform-style: preserve-3d;
-    background: radial-gradient(circle at 42% 38%, #333 0%, #202020 55%, #131313 100%);
-    /* Deep inset ring plus a bright thin rim highlight along the top-left,
-       like a light source grazing a physically raised metal disc. */
-    box-shadow:
-      inset 0 0 26px rgba(0,0,0,0.75),
-      inset 0 2px 3px rgba(255,255,255,0.06),
-      0 1px 0 rgba(255,255,255,0.08),
-      0 10px 18px rgba(0,0,0,0.55),
-      0 0 0 3px rgba(0,0,0,0.5);
+    background: radial-gradient(circle, #2b2b2b 0%, #1c1c1c 70%, #141414 100%);
+    box-shadow: inset 0 0 22px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
     display:flex; align-items:center; justify-content:center;
   }
   /* subtle ridge lines like a real platter mat */
   .platter::before{
     content:''; position:absolute; inset:6%; border-radius:50%;
     background:
-      repeating-radial-gradient(circle at center, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 5px);
-    box-shadow: inset 0 0 14px rgba(0,0,0,0.5);
+      repeating-radial-gradient(circle at center, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 5px);
     pointer-events:none;
   }
   .platter-ring-markers{
@@ -159,65 +127,52 @@
     width:82%; height:82%; border-radius:50%; position:relative;
     touch-action:none;
     background:
-      radial-gradient(circle at 32% 26%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 26%),
-      repeating-radial-gradient(circle at center, #0d1111 0, #0d1111 1.4px, #191d1d 1.4px, #191d1d 2.8px);
-    /* Record sits visibly ABOVE the platter mat — a real disc casts its own
-       shadow onto the mat beneath it and catches a rim-light along one edge. */
-    box-shadow:
-      0 3px 3px rgba(0,0,0,0.4),
-      0 10px 20px rgba(0,0,0,0.55),
-      inset 0 0 0 1px rgba(255,255,255,0.06),
-      inset 2px 2px 4px rgba(255,255,255,0.04);
+      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 30%),
+      repeating-radial-gradient(circle at center, #101414 0, #101414 1.4px, #1a1e1e 1.4px, #1a1e1e 2.8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
     display:flex; align-items:center; justify-content:center;
     animation: spin 1.8s linear infinite; animation-play-state: paused;
   }
   .deck-disc.spinning{ animation-play-state: running; }
   .deck-disc-label{
     width:34%; height:34%; border-radius:50%; position:relative; z-index:1;
-    background: radial-gradient(circle at 32% 26%, var(--gold), var(--coral) 75%);
+    background: radial-gradient(circle at 35% 30%, var(--gold), var(--coral) 75%);
     background-size:cover; background-position:center;
-    box-shadow:
-      0 0 0 2px rgba(0,0,0,0.6),
-      inset 0 0 8px rgba(0,0,0,0.35),
-      inset 2px 2px 5px rgba(255,255,255,0.18);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.55), inset 0 0 6px rgba(0,0,0,0.3);
     display:flex; align-items:center; justify-content:center;
   }
   .deck-disc-label::after{
     content:''; width:14%; height:14%; border-radius:50%; background:#0A0D0E;
-    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25), inset 0 1px 2px rgba(0,0,0,0.6);
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25);
   }
   .spindle{
     position:absolute; top:50%; left:50%; width:5%; height:5%; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #f0f0f0, #888);
-    transform: translate(-50%,-50%) translateZ(8px); z-index:5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.7), inset 0 -1px 1px rgba(0,0,0,0.3);
+    background: radial-gradient(circle at 35% 30%, #ddd, #888);
+    transform: translate(-50%,-50%); z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.6);
   }
   .tonearm-base{
     position:absolute; top:6%; right:5%; width:15%; height:15%; border-radius:50%;
-    background: radial-gradient(circle at 32% 26%, #5a5a5a, #232323);
-    box-shadow:
-      0 3px 6px rgba(0,0,0,0.6),
-      inset 0 0 0 1px rgba(255,255,255,0.1),
-      inset 1px 1px 2px rgba(255,255,255,0.15);
-    z-index:7; transform: translateZ(10px);
+    background: radial-gradient(circle at 35% 30%, #4a4a4a, #232323);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.06);
+    z-index:7;
   }
   .tonearm{
     position:absolute; top:calc(6% + 6px); right:calc(5% + 6px); width:46%; height:5px;
     transform-origin: 92% 50%;
-    transform: rotate(-26deg) translateZ(14px);
+    transform: rotate(-26deg);
     transition: transform 0.6s cubic-bezier(0.34, 1.1, 0.6, 1);
     z-index:8;
   }
   .deck-disc.spinning ~ .tonearm,
-  .platter.playing .tonearm{ transform: rotate(9deg) translateZ(14px); }
+  .platter.playing .tonearm{ transform: rotate(9deg); }
   .tonearm-shaft{
     position:absolute; top:0; left:0; width:100%; height:100%; border-radius:3px;
-    background: linear-gradient(180deg, #e8dcc0, #cfc0a0 45%, #9c8560);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+    background: linear-gradient(90deg, #cfc0a0, #9c8560);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
   }
   .tonearm-head{
     position:absolute; left:-8%; top:-140%; width:16%; height:9px; border-radius:2px;
-    background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 2px 3px rgba(0,0,0,0.5);
+    background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
   }
   .tonearm-head::after{
     content:''; position:absolute; left:8%; bottom:-4px; width:6%; height:5px; border-radius:1px;
@@ -341,21 +296,37 @@
     touch-action:manipulation; position:relative; overflow:hidden;
     box-shadow: 0 3px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -6px 10px rgba(0,0,0,0.25);
     transition: transform 0.06s ease, box-shadow 0.06s ease;
+    /* Real RGB pad hardware constantly cycles hue rather than sitting on one
+       fixed color — each pad below gets its own animation-delay offset so they
+       don't all cycle in lockstep, same as a real RGB pad grid. */
+    animation: padRgbCycle 6s linear infinite;
+    filter: saturate(1.15);
+  }
+  @keyframes padRgbCycle{
+    0%   { filter: hue-rotate(0deg) saturate(1.15); }
+    100% { filter: hue-rotate(360deg) saturate(1.15); }
   }
   .drum-pad span{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.5px; color:rgba(0,0,0,0.7); font-weight:800; text-shadow:0 1px 0 rgba(255,255,255,0.15); }
   .drum-pad.firing{
     transform: translateY(2px) scale(0.96);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 6px rgba(0,0,0,0.3), 0 0 16px 2px var(--pad-glow, rgba(255,255,255,0.5));
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 6px rgba(0,0,0,0.3), 0 0 20px 4px var(--pad-glow, rgba(255,255,255,0.6));
+    filter: saturate(1.6) brightness(1.15);
   }
-  /* Each pad gets its own real color, like a physical DJ controller's velocity pad grid */
-  .drum-pad[data-drum="kick"]    { background: linear-gradient(160deg, #ff6b5e, #d43f34); --pad-glow: rgba(255,107,94,0.7); }
-  .drum-pad[data-drum="snare"]   { background: linear-gradient(160deg, #ffb84d, #d98a1f); --pad-glow: rgba(255,184,77,0.7); }
-  .drum-pad[data-drum="hihat"]   { background: linear-gradient(160deg, #ffe14d, #d9b91f); --pad-glow: rgba(255,225,77,0.7); }
-  .drum-pad[data-drum="ohihat"]  { background: linear-gradient(160deg, #b6e84d, #8ab920); --pad-glow: rgba(182,232,77,0.7); }
-  .drum-pad[data-drum="clap"]    { background: linear-gradient(160deg, #4de8a0, #1fb374); --pad-glow: rgba(77,232,160,0.7); }
-  .drum-pad[data-drum="rim"]     { background: linear-gradient(160deg, #4dd9e8, #1f9db3); --pad-glow: rgba(77,217,232,0.7); }
-  .drum-pad[data-drum="tom"]     { background: linear-gradient(160deg, #6b9bff, #3f66d4); --pad-glow: rgba(107,155,255,0.7); }
-  .drum-pad[data-drum="crash"]   { background: linear-gradient(160deg, #c96bff, #9a3fd4); --pad-glow: rgba(201,107,255,0.7); }
+  /* Base colors — the RGB cycle animation shifts hue continuously from these starting points */
+  .drum-pad[data-drum="kick"]    { background: linear-gradient(160deg, #ff6b5e, #d43f34); --pad-glow: rgba(255,107,94,0.7); animation-delay: 0s; }
+  .drum-pad[data-drum="snare"]   { background: linear-gradient(160deg, #ffb84d, #d98a1f); --pad-glow: rgba(255,184,77,0.7); animation-delay: -0.75s; }
+  .drum-pad[data-drum="hihat"]   { background: linear-gradient(160deg, #ffe14d, #d9b91f); --pad-glow: rgba(255,225,77,0.7); animation-delay: -1.5s; }
+  .drum-pad[data-drum="ohihat"]  { background: linear-gradient(160deg, #b6e84d, #8ab920); --pad-glow: rgba(182,232,77,0.7); animation-delay: -2.25s; }
+  .drum-pad[data-drum="clap"]    { background: linear-gradient(160deg, #4de8a0, #1fb374); --pad-glow: rgba(77,232,160,0.7); animation-delay: -3s; }
+  .drum-pad[data-drum="rim"]     { background: linear-gradient(160deg, #4dd9e8, #1f9db3); --pad-glow: rgba(77,217,232,0.7); animation-delay: -3.75s; }
+  .drum-pad[data-drum="tom"]     { background: linear-gradient(160deg, #6b9bff, #3f66d4); --pad-glow: rgba(107,155,255,0.7); animation-delay: -4.5s; }
+  .drum-pad[data-drum="crash"]   { background: linear-gradient(160deg, #c96bff, #9a3fd4); --pad-glow: rgba(201,107,255,0.7); animation-delay: -5.25s; }
+  .drum-pad[data-drum="cowbell"]   { background: linear-gradient(160deg, #ffd76b, #d4a23f); --pad-glow: rgba(255,215,107,0.7); animation-delay: -1s; }
+  .drum-pad[data-drum="shaker"]    { background: linear-gradient(160deg, #8bffb8, #3fd485); --pad-glow: rgba(139,255,184,0.7); animation-delay: -2s; }
+  .drum-pad[data-drum="woodblock"] { background: linear-gradient(160deg, #ff9e6b, #d4633f); --pad-glow: rgba(255,158,107,0.7); animation-delay: -3.5s; }
+  .drum-pad[data-drum="subboom"]   { background: linear-gradient(160deg, #a0e8ff, #3fb8d4); --pad-glow: rgba(160,232,255,0.7); animation-delay: -4.8s; }
+  /* "Reduce motion" static-color fallback — see the Glow settings toggle */
+  body.pads-static .drum-pad{ animation: none; }
   .fx-pad{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
     padding:10px 4px; border-radius:9px; border:1px solid rgba(255,255,255,0.1);
@@ -520,32 +491,60 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
+  #npPlayerStage{
+    perspective: 260px; flex-shrink:0;
+  }
   #npPlayerBody{
     position:relative; width:60px; height:60px; flex-shrink:0; border-radius:8px;
-    background: linear-gradient(155deg, #35322c, #1a1815 65%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.35);
+    background: linear-gradient(155deg, #3d3a33, #1a1815 65%);
+    transform: rotateX(10deg);
+    transform-style: preserve-3d;
+    /* Layered shadows at increasing offset/blur simulate real cast depth
+       instead of one flat drop-shadow, same idea as a physically deep object. */
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.5),
+      0 3px 4px rgba(0,0,0,0.35),
+      0 7px 10px rgba(0,0,0,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -1px 0 rgba(0,0,0,0.4),
+      inset 0 0 0 1px rgba(0,0,0,0.4);
     display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;
     padding:5px 9px 5px 5px;
   }
+  #npPlayerBody::before{
+    content:''; position:absolute; top:0; left:6px; right:6px; height:1.5px; border-radius:1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    pointer-events:none;
+  }
   #npPlatterRing{
     position:relative; width:46px; height:46px; border-radius:50%; flex-shrink:0;
-    background: radial-gradient(circle, #2b2b2b 0%, #1c1c1c 70%, #141414 100%);
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.4);
+    transform: translateZ(3px);
+    transform-style: preserve-3d;
+    background: radial-gradient(circle at 40% 35%, #333 0%, #1c1c1c 70%, #101010 100%);
+    box-shadow:
+      inset 0 0 8px rgba(0,0,0,0.75),
+      inset 0 1px 2px rgba(255,255,255,0.06),
+      0 1px 0 rgba(255,255,255,0.08),
+      0 3px 5px rgba(0,0,0,0.5);
     display:flex; align-items:center; justify-content:center;
   }
-  #nowPlaying .disc{ width:38px; height:38px; border-width:1.5px; position:relative; }
+  #nowPlaying .disc{
+    width:38px; height:38px; border-width:1.5px; position:relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.5), inset 2px 2px 3px rgba(255,255,255,0.05);
+  }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
   #nowPlaying .disc::after{ width:5px; height:5px; }
   #npMiniTonearm{
     position:absolute; top:2px; right:-1px; width:22px; height:2.5px; border-radius:2px;
-    background: linear-gradient(90deg, #cfc0a0, #9c8560); transform-origin: 90% 50%;
-    transform: rotate(-32deg); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:4;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.4);
+    background: linear-gradient(180deg, #e8dcc0, #cfc0a0 50%, #9c8560); transform-origin: 90% 50%;
+    transform: rotate(-32deg) translateZ(6px); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:4;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
   }
-  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(6deg); }
+  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(6deg) translateZ(6px); }
   #npMiniTonearm::before{
     content:''; position:absolute; right:-4px; top:-4px; width:9px; height:9px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #4a4a4a, #232323); box-shadow:0 1px 2px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 35% 30%, #5a5a5a, #232323);
+    box-shadow:0 1px 2px rgba(0,0,0,0.5), inset 1px 1px 1px rgba(255,255,255,0.15);
   }
   #npMiniTonearm::after{ content:''; position:absolute; left:-2px; top:0.5px; width:4px; height:3px; background:#111; border-radius:1px; }
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
@@ -706,11 +705,13 @@
 <div id="nowPlaying">
   <div id="miniBar"><div class="fill" id="miniFill"></div></div>
   <div class="np-row">
+    <div id="npPlayerStage">
     <div id="npPlayerBody">
       <div id="npPlatterRing">
         <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
       </div>
       <div id="npMiniTonearm"></div>
+    </div>
     </div>
     <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div>
       <div class="name-bubble" id="nameBubble" style="display:none;">
@@ -879,7 +880,7 @@
 
       <div style="margin-top:12px;">
         <button class="playlist-pick-btn" id="viewUpdateLogBtn" style="text-align:center;">Update log</button>
-        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;" id="currentVersionLabel">SideCut v29</div>
+        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;" id="currentVersionLabel">SideCut v30</div>
       </div>
     </div>
 
@@ -939,7 +940,6 @@
       <div class="dj-track-strip" id="djTrackStrip"></div>
     </div>
 
-    <div class="deck-stage">
     <div class="deck-body">
       <div class="deck-brand">SIDECUT · SL-1200 STYLE DIRECT DRIVE</div>
       <div class="platter-wrap">
@@ -1137,7 +1137,6 @@
         <div style="font-size:10.5px; color:var(--ink-dim); margin-top:6px;">Records everything you hear on this deck — scratches, EQ, pitch, all of it.</div>
       </div>
     </div>
-    </div>
 
     <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Grab the record to scratch — release to resume at pitch speed. Tap a cue pad to set it, hold to jump back to it.</div>
     <div class="modal-btns">
@@ -1152,7 +1151,7 @@
     <div style="display:flex; align-items:center; gap:10px;">
       <div class="brand-mark" style="width:26px; height:26px;"></div>
       <div>
-        <h3 id="whatsNewVersion" style="font-size:17px;">What's new in v29</h3>
+        <h3 id="whatsNewVersion" style="font-size:17px;">What's new in v30</h3>
         <div style="font-size:11.5px; color:var(--ink-dim);">SideCut update</div>
       </div>
     </div>
@@ -1646,11 +1645,19 @@
     }catch(e){ /* defaults are fine */ }
   }
   // ---------------- Versioning: bump APP_VERSION and add a CHANGELOG entry every
-  // time a real update ships. Minor/patch updates (bug fixes, small tweaks) use
-  // a decimal like 27.5; bigger feature updates bump the whole number. This is
-  // also what the service worker's cache name should track alongside.
-  const APP_VERSION = '29';
+  // time ANY update ships, no exceptions. The rule:
+  //   - Whole number (30, 31, ...): new features, or fixing something that was
+  //     genuinely broken/non-functional.
+  //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
+  //     additions, visual polish, copy changes.
+  // The service worker's cache name should be bumped to match on every change too.
+  const APP_VERSION = '30';
   const CHANGELOG = [
+    { version: '30', title: 'Real drum/FX samples, mini player reverted to flat, DJ turntable stays flat', items: [
+      'Beat pad and FX pad now play real recorded samples instead of synthesized tones',
+      'Reverted the DJ Mode turntable back to its original flat styling',
+      'Mini now-playing record player restyled with 3D depth instead',
+    ]},
     { version: '29', title: 'Notification bell + 3D turntable', items: [
       'Added a notification bell in the header — badges when there\'s something new, tap to see the full update history',
       'Update popup now appears a beat after load instead of stacking instantly with other startup messages',
@@ -4064,6 +4071,7 @@
     renderDjPlaylistSwitcher();
     renderDjTrackStrip();
     $('djModeBackdrop').style.display = 'flex';
+    preloadAllPadSamples(); // start fetching pad/FX samples now, in the background, so pads are ready by the time they're tapped
 
     try{
       await ensureDeckBuffer(t);
@@ -4256,298 +4264,22 @@
   }
   djAutoCrossfadeWatcher();
 
-  // ---------------- FX pads: synthesized one-shots mixed straight into the deck's own chain ----------------
-  // No sample files to ship, so each FX is built live from oscillators/noise —
-  // still lands in the recording since it's connected into the same graph.
+  // ---------------- FX pads: real recorded one-shots (via the sample engine below) ----------------
   function fxDestination(){
     ensureAudioGraph();
     // Feed FX straight into the limiter (post-EQ) so kill switches don't accidentally mute your air horn.
     return limiterNodes[0];
   }
-  function playAirhorn(){
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    [0, 0.28, 0.56].forEach((delay, i) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(370, t0 + delay);
-      g.gain.setValueAtTime(0, t0 + delay);
-      g.gain.linearRampToValueAtTime(0.5, t0 + delay + 0.02);
-      g.gain.setValueAtTime(0.5, t0 + delay + 0.22);
-      g.gain.linearRampToValueAtTime(0, t0 + delay + 0.27);
-      osc.connect(g).connect(dest);
-      osc.start(t0 + delay); osc.stop(t0 + delay + 0.3);
-    });
-  }
-  function playSiren(){
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(500, t0);
-    for(let i=0;i<6;i++){
-      osc.frequency.linearRampToValueAtTime(1100, t0 + i*0.3 + 0.15);
-      osc.frequency.linearRampToValueAtTime(500, t0 + i*0.3 + 0.3);
-    }
-    g.gain.setValueAtTime(0.35, t0);
-    g.gain.setValueAtTime(0.35, t0 + 1.8);
-    g.gain.linearRampToValueAtTime(0, t0 + 1.95);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0 + 2);
-  }
-  function playRiser(){
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(80, t0);
-    osc.frequency.exponentialRampToValueAtTime(1800, t0 + 1.6);
-    g.gain.setValueAtTime(0.001, t0);
-    g.gain.exponentialRampToValueAtTime(0.4, t0 + 1.5);
-    g.gain.linearRampToValueAtTime(0, t0 + 1.65);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0 + 1.7);
-  }
-  function playScratchStab(){
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(180, t0);
-    osc.frequency.exponentialRampToValueAtTime(60, t0 + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.2);
-    g.gain.setValueAtTime(0.5, t0);
-    g.gain.linearRampToValueAtTime(0, t0 + 0.22);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0 + 0.25);
-  }
-  function playExplosion(){
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    const bufferSize = ctx.sampleRate * 0.6;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2.5);
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.setValueAtTime(2000, t0); lp.frequency.exponentialRampToValueAtTime(120, t0+0.6);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.7, t0);
-    noise.connect(lp).connect(g).connect(dest);
-    noise.start(t0);
-  }
-  function playReverseFx(){
-    // Reverse-cymbal-style riser: noise burst with an inverted (rising) envelope.
-    const ctx = audioCtx; const dest = fxDestination();
-    const t0 = ctx.currentTime;
-    const dur = 0.9;
-    const bufferSize = ctx.sampleRate * dur;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1);
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass'; hp.frequency.value = 2000;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.001, t0);
-    g.gain.exponentialRampToValueAtTime(0.45, t0 + dur - 0.05);
-    g.gain.linearRampToValueAtTime(0, t0 + dur);
-    noise.connect(hp).connect(g).connect(dest);
-    noise.start(t0); noise.stop(t0 + dur);
-  }
-  // ---------------- Beat pad: an actual drum-pad grid you tap to play sounds live over the track ----------------
-  // Each hit builds fresh nodes so rapid/overlapping taps (rolls, double-kicks)
-  // work naturally — nothing to "reset" between hits, unlike a single shared node.
-  function playKick(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, t0);
-    osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.15);
-    g.gain.setValueAtTime(0.9, t0);
-    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0 + 0.36);
-  }
-  function playSnare(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const bufSize = ctx.sampleRate * 0.2;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 1.5);
-    const noise = ctx.createBufferSource(); noise.buffer = buf;
-    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 900;
-    const gNoise = ctx.createGain(); gNoise.gain.setValueAtTime(0.7, t0); gNoise.gain.exponentialRampToValueAtTime(0.001, t0+0.2);
-    noise.connect(hp).connect(gNoise).connect(dest);
-    noise.start(t0);
-    const osc = ctx.createOscillator(); const gTone = ctx.createGain();
-    osc.type='triangle'; osc.frequency.setValueAtTime(180, t0);
-    gTone.gain.setValueAtTime(0.5, t0); gTone.gain.exponentialRampToValueAtTime(0.001, t0+0.12);
-    osc.connect(gTone).connect(dest);
-    osc.start(t0); osc.stop(t0+0.13);
-  }
-  function playHihat(open){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const dur = open ? 0.35 : 0.06;
-    const bufSize = ctx.sampleRate * dur;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, open ? 1.2 : 3);
-    const noise = ctx.createBufferSource(); noise.buffer = buf;
-    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 7000;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.35, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
-    noise.connect(hp).connect(g).connect(dest);
-    noise.start(t0);
-  }
-  function playClap(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    [0, 0.02, 0.04].forEach(delay => {
-      const bufSize = ctx.sampleRate * 0.08;
-      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 2);
-      const noise = ctx.createBufferSource(); noise.buffer = buf;
-      const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = 1200; bp.Q.value = 1.2;
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.5, t0+delay); g.gain.exponentialRampToValueAtTime(0.001, t0+delay+0.08);
-      noise.connect(bp).connect(g).connect(dest);
-      noise.start(t0+delay);
-    });
-  }
-  function playRim(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='square'; osc.frequency.setValueAtTime(900, t0);
-    g.gain.setValueAtTime(0.4, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.05);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.06);
-  }
-  function playTom(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='sine'; osc.frequency.setValueAtTime(220, t0);
-    osc.frequency.exponentialRampToValueAtTime(90, t0+0.25);
-    g.gain.setValueAtTime(0.7, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.35);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.36);
-  }
-  function playCrash(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const bufSize = ctx.sampleRate * 1.2;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 0.7);
-    const noise = ctx.createBufferSource(); noise.buffer = buf;
-    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 5000;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.4, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+1.2);
-    noise.connect(hp).connect(g).connect(dest);
-    noise.start(t0);
-  }
-  function playCowbell(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    [800, 540].forEach(freq => {
-      const osc = ctx.createOscillator(); const g = ctx.createGain();
-      osc.type='square'; osc.frequency.value = freq;
-      g.gain.setValueAtTime(0.35, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.3);
-      osc.connect(g).connect(dest);
-      osc.start(t0); osc.stop(t0+0.32);
-    });
-  }
-  function playShaker(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const bufSize = ctx.sampleRate * 0.1;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/bufSize, 2);
-    const noise = ctx.createBufferSource(); noise.buffer = buf;
-    const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = 6000; bp.Q.value = 0.7;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.3, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.1);
-    noise.connect(bp).connect(g).connect(dest);
-    noise.start(t0);
-  }
-  function playWoodblock(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='square'; osc.frequency.setValueAtTime(1200, t0);
-    osc.frequency.exponentialRampToValueAtTime(800, t0+0.03);
-    g.gain.setValueAtTime(0.45, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.04);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.05);
-  }
-  function playSubBoom(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='sine'; osc.frequency.setValueAtTime(70, t0);
-    osc.frequency.exponentialRampToValueAtTime(25, t0+0.8);
-    g.gain.setValueAtTime(0.9, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.9);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.95);
-  }
-  const DRUM_HANDLERS = {
-    kick: playKick, snare: playSnare, hihat: () => playHihat(false), ohihat: () => playHihat(true),
-    clap: playClap, rim: playRim, tom: playTom, crash: playCrash,
-    cowbell: playCowbell, shaker: playShaker, woodblock: playWoodblock, subboom: playSubBoom,
-  };
-  document.querySelectorAll('.drum-pad').forEach(btn => {
-    function fire(e){
-      e.preventDefault();
-      ensureAudioGraph();
-      if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-      const drum = btn.dataset.drum;
-      if(DRUM_HANDLERS[drum]) DRUM_HANDLERS[drum]();
-      btn.classList.add('firing');
-      setTimeout(() => btn.classList.remove('firing'), 110);
-      if(navigator.vibrate) navigator.vibrate(6);
-    }
-    // pointerdown (not click) so pads respond instantly and support fast rolls/repeated hits.
-    btn.addEventListener('pointerdown', fire);
-  });
-
-  function playLaser(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='sawtooth'; osc.frequency.setValueAtTime(2200, t0);
-    osc.frequency.exponentialRampToValueAtTime(120, t0+0.25);
-    g.gain.setValueAtTime(0.35, t0); g.gain.exponentialRampToValueAtTime(0.001, t0+0.26);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.27);
-  }
-  function playVinylBrakeFx(){
-    // A quick version of the tape-stop effect as a one-shot FX pad (applies to
-    // a synth tone, not the actual track — for the full track-stopping version see TAPE STOP).
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const osc = ctx.createOscillator(); const g = ctx.createGain();
-    osc.type='sawtooth'; osc.frequency.setValueAtTime(300, t0);
-    osc.frequency.exponentialRampToValueAtTime(20, t0+0.6);
-    g.gain.setValueAtTime(0.4, t0); g.gain.linearRampToValueAtTime(0, t0+0.65);
-    osc.connect(g).connect(dest);
-    osc.start(t0); osc.stop(t0+0.66);
-  }
-  function playCrowdCheer(){
-    const ctx = audioCtx; const dest = fxDestination(); const t0 = ctx.currentTime;
-    const dur = 1.8;
-    const bufSize = ctx.sampleRate * dur;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++){
-      const envelope = Math.sin((i/bufSize) * Math.PI); // swells up then back down
-      data[i] = (Math.random()*2-1) * envelope * 0.8;
-    }
-    const noise = ctx.createBufferSource(); noise.buffer = buf;
-    const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.5;
-    const g = ctx.createGain(); g.gain.value = 0.4;
-    noise.connect(bp).connect(g).connect(dest);
-    noise.start(t0);
-  }
   const FX_HANDLERS = {
-    airhorn: playAirhorn, siren: playSiren, riser: playRiser,
-    scratchstab: playScratchStab, explosion: playExplosion, reverse: playReverseFx,
-    laser: playLaser, vinylbrake: playVinylBrakeFx, crowdcheer: playCrowdCheer,
+    airhorn: () => playSamplePad(FX_SAMPLE_PATHS, 'airhorn'),
+    siren: () => playSamplePad(FX_SAMPLE_PATHS, 'siren'),
+    riser: () => playSamplePad(FX_SAMPLE_PATHS, 'riser'),
+    scratchstab: () => playSamplePad(FX_SAMPLE_PATHS, 'scratchstab'),
+    explosion: () => playSamplePad(FX_SAMPLE_PATHS, 'explosion'),
+    reverse: () => playSamplePad(FX_SAMPLE_PATHS, 'reverse'),
+    laser: () => playSamplePad(FX_SAMPLE_PATHS, 'laser'),
+    vinylbrake: () => playSamplePad(FX_SAMPLE_PATHS, 'vinylbrake'),
+    crowdcheer: () => playSamplePad(FX_SAMPLE_PATHS, 'crowdcheer'),
   };
   document.querySelectorAll('.fx-pad').forEach(btn => {
     btn.addEventListener('click', () => {
