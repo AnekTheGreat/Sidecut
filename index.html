@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head> 
@@ -86,27 +87,15 @@
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
-  /* ---------- RGB + : audio-reactive side glows. Built + shown only for the RGB + theme; ---------- */
-  /* every other theme (including plain RGB) never touches these elements. */
-  .rgb-glow-wash{
-    position:fixed; top:0; bottom:0; width:38vw; max-width:340px;
-    pointer-events:none; z-index:4; opacity:0; mix-blend-mode:screen;
-    will-change:opacity; transition:opacity 0.35s ease;
+  /* ---------- RGB + : the side-glow overlays are gone. All that's left of "glow sync" now ---------- */
+  /* lives on the seek strip itself — a hairline ripple that only shows up on bass hits. */
+  #seekWaveSvg{
+    position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+    height:22px; width:100%; pointer-events:none; z-index:1; opacity:0;
+    transition:opacity 0.25s ease-out;
   }
-  .rgb-glow-wash.left{ left:0; background:linear-gradient(90deg, var(--coral), transparent 100%); }
-  .rgb-glow-wash.right{ right:0; background:linear-gradient(270deg, var(--gold), transparent 100%); }
-
-  .rgb-glow-side{
-    position:fixed; z-index:5; opacity:0.55; pointer-events:none;
-    transition: opacity 0.14s ease-out, box-shadow 0.14s ease-out;
-    will-change:opacity, box-shadow;
-  }
-  .rgb-glow-side.left{ top:0; bottom:0; left:0; width:2px; background:var(--coral); box-shadow:0 0 4px 0 var(--coral); }
-  .rgb-glow-side.right{ top:0; bottom:0; right:0; width:2px; background:var(--gold); box-shadow:0 0 4px 0 var(--gold); }
-  .rgb-glow-side.top{ top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, var(--coral), var(--gold)); opacity:0.32; }
-  .rgb-glow-side.bottom{ bottom:0; left:0; right:0; height:2px; background:linear-gradient(90deg, var(--coral), var(--gold)); opacity:0.32; }
-  body.rgb-plus-active .rgb-glow-side, body.rgb-plus-active .rgb-glow-wash{ display:block; }
-  body:not(.rgb-plus-active) .rgb-glow-side, body:not(.rgb-plus-active) .rgb-glow-wash{ display:none; }
+  #seekWaveSvg.live{ opacity:1; }
+  #seekWaveSvg path{ fill:none; stroke:var(--coral); stroke-width:1.4; stroke-linecap:round; }
 
   /* ---------- DJ Mode: real turntable rig ---------- */
   .deck-body{
@@ -502,7 +491,7 @@
     transition: padding 0.25s ease, gap 0.25s ease;
   }
   #nowPlaying.mini{ padding:0; gap:0; }
-  #nowPlaying.mini .np-row, #nowPlaying.mini .seek-row span, #nowPlaying.mini #waveformBar, #nowPlaying.mini #seekBar{ display:none; }
+  #nowPlaying.mini .np-row, #nowPlaying.mini .seek-row span, #nowPlaying.mini #waveformBar, #nowPlaying.mini #seekBar, #nowPlaying.mini .seek-line-wrap{ display:none; }
   #nowPlaying.mini #miniBar{ display:block; }
   #miniBar{
     display:none; height:4px; width:100%; background:var(--line); position:relative; cursor:pointer;
@@ -706,12 +695,7 @@
 </style>
 </head>
 <body>
-<div class="rgb-glow-wash left" id="rgbGlowWashLeft"></div>
-<div class="rgb-glow-wash right" id="rgbGlowWashRight"></div>
-<div class="rgb-glow-side left" id="rgbGlowLeft"></div>
-<div class="rgb-glow-side right" id="rgbGlowRight"></div>
-<div class="rgb-glow-side top"></div>
-<div class="rgb-glow-side bottom"></div>
+
 
 <header>
   <div class="brand">
@@ -825,7 +809,10 @@
   </div>
   <div class="seek-row">
     <span id="curTime">0:00</span>
-    <input type="range" id="seekBar" min="0" max="100" value="0">
+    <div class="seek-line-wrap" style="position:relative; flex:1; display:flex; align-items:center;">
+      <input type="range" id="seekBar" min="0" max="100" value="0" style="width:100%;">
+      <svg id="seekWaveSvg" viewBox="0 0 100 22" preserveAspectRatio="none"><path id="seekWavePath" d="M0,11 L100,11"></path></svg>
+    </div>
     <div id="waveformBar" style="display:none;"></div>
     <span id="totalTime">0:00</span>
   </div>
@@ -1447,9 +1434,10 @@
     rgbAnimHandle = requestAnimationFrame(tick);
   }
 
-  // ---------------- RGB +: side glow bars that thump with the bass, only ever active on ----------------
+  // ---------------- RGB +: the seek strip itself ripples with the bass, only ever active on ----------------
   // the RGB + theme. Taps whichever deck's limiter is currently live for frequency data;
-  // no separate audio path, so it can't affect what's actually heard.
+  // no separate audio path, so it can't affect what's actually heard. No screen-wide glow —
+  // just the strip, and only a couple px of it, so it never fights for attention.
   const glowAnalysers = [null, null];
   function ensureGlowAnalyser(idx){
     if(!audioCtx || glowAnalysers[idx] || !limiterNodes[idx]) return;
@@ -1462,25 +1450,25 @@
     }catch(e){ /* audio graph not ready yet */ }
   }
   let glowLoopHandle = null;
-  let washEnergyAvg = 0;
-  let lineLevel = 0; // single smoothed bass level, shared by both lines
+  let lineLevel = 0; // single smoothed bass level driving the strip ripple
+  let waveSeed = Math.random() * 1000;
+  function flattenSeekWave(){
+    const p = $('seekWavePath');
+    if(p) p.setAttribute('d', 'M0,11 L100,11');
+    const svg = $('seekWaveSvg');
+    if(svg) svg.classList.remove('live');
+  }
   function stopGlowSync(){
     if(glowLoopHandle){ cancelAnimationFrame(glowLoopHandle); glowLoopHandle = null; }
-    const l = $('rgbGlowLeft'), r = $('rgbGlowRight');
-    l.style.opacity = 0.55; l.style.boxShadow = '0 0 4px 0 var(--coral)';
-    r.style.opacity = 0.55; r.style.boxShadow = '0 0 4px 0 var(--gold)';
-    $('rgbGlowWashLeft').style.opacity = 0;
-    $('rgbGlowWashRight').style.opacity = 0;
-    washEnergyAvg = 0;
     lineLevel = 0;
     glowFrameSkip = 0;
+    flattenSeekWave();
   }
   let glowFrameSkip = 0;
   function startGlowSync(){
     if(glowLoopHandle) return; // already running
     ensureGlowAnalyser(activeIdx);
-    const l = $('rgbGlowLeft'), r = $('rgbGlowRight');
-    const washLeft = $('rgbGlowWashLeft'), washRight = $('rgbGlowWashRight');
+    const svg = $('seekWaveSvg'), path = $('seekWavePath');
     function tick(){
       glowLoopHandle = requestAnimationFrame(tick);
       if(!(THEMES[currentTheme] && THEMES[currentTheme].rgbPlus)) { stopGlowSync(); return; }
@@ -1499,19 +1487,35 @@
       const raw = Math.min(1, (sum / bassBins) / 220);
       // Fast attack, slow release — snaps up on the hit, eases back down, never twitchy.
       lineLevel = raw > lineLevel ? lineLevel + (raw - lineLevel) * 0.6 : lineLevel + (raw - lineLevel) * 0.08;
-      const glowSize = 4 + lineLevel * 26; // the "pop" — blur radius grows on the hit, line itself stays hairline-thin
-      const spread = lineLevel * 3;
-      const opacity = 0.4 + lineLevel * 0.6;
-      const shadowL = `0 0 ${glowSize}px ${spread}px var(--coral)`;
-      const shadowR = `0 0 ${glowSize}px ${spread}px var(--gold)`;
-      l.style.opacity = opacity; l.style.boxShadow = shadowL;
-      r.style.opacity = opacity; r.style.boxShadow = shadowR;
-      // Ambient full-height wash: a soft edge glow that swells with the same bass energy —
-      // stays confined to the edges, never washes over the whole screen.
-      washEnergyAvg = washEnergyAvg * 0.9 + lineLevel * 0.1;
-      const washOpacity = Math.min(0.4, 0.06 + washEnergyAvg * 0.55);
-      washLeft.style.opacity = washOpacity;
-      washRight.style.opacity = washOpacity;
+      if(lineLevel < 0.03){
+        svg.classList.remove('live');
+        path.setAttribute('d', 'M0,11 L100,11');
+        return;
+      }
+      svg.classList.add('live');
+      // Kept deliberately small — a couple px of ripple, not a mountain range.
+      const amp = lineLevel * 5.5;
+      waveSeed += 0.35 + lineLevel * 0.5; // random-feeling drift, not a clean repeating sine
+      const segments = 14;
+      let d = `M0,${11}`;
+      for(let i=1;i<=segments;i++){
+        const x = (i / segments) * 100;
+        const wobble = Math.sin(waveSeed + i * 1.7) * 0.6 + Math.sin(waveSeed * 0.6 + i * 0.9) * 0.4;
+        const y = 11 + wobble * amp;
+        d += ` L${x.toFixed(1)},${y.toFixed(2)}`;
+      }
+      path.setAttribute('d', d);
+      // If the "Waveform" seek style is active, give its bars the same subtle bass jitter
+      // instead of (or alongside) the line ripple — same source, same restraint.
+      if($('waveformBar').style.display !== 'none'){
+        const bars = document.querySelectorAll('#waveformBar .wave-bar');
+        bars.forEach((bar, i) => {
+          const base = currentWaveform ? (currentWaveform[i] != null ? currentWaveform[i] : 0.15) : 0.35;
+          const wobble = Math.sin(waveSeed + i * 2.3) * 0.5 + 0.5; // 0..1, per-bar phase offset
+          const jitter = wobble * lineLevel * 0.28; // small — nudges height, doesn't redraw the song
+          bar.style.height = (15 + Math.min(1, base + jitter) * 80) + '%';
+        });
+      }
     }
     glowLoopHandle = requestAnimationFrame(tick);
   }
@@ -1529,7 +1533,6 @@
       root.setProperty('--gold', th.gold);
     }
     currentTheme = key;
-    document.body.classList.toggle('rgb-plus-active', !!th.rgbPlus);
     if(th.rgbPlus){
       const a = activeAudio();
       if(a && !a.paused) startGlowSync(); else stopGlowSync();
