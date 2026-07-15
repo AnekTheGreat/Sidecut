@@ -501,9 +501,9 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-#npPlayerStage{ perspective: 320px; perspective-origin: 68% 30%; flex-shrink:0; position:relative; }
+#npPlayerStage{ perspective: 360px; perspective-origin: 68% 30%; flex-shrink:0; position:relative; }
   #npPlayerBody{
-    position:relative; width:54px; height:52px; flex-shrink:0;
+    position:relative; width:64px; height:60px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;
     transform-style:preserve-3d;
     /* whole rig rotates together as one rigid object — this is the "camera angle" on the deck */
@@ -511,14 +511,20 @@
   }
   #npPlayerBody::after{
     /* chassis base — a sibling plate sitting just behind the platter, moves with the rig */
-    content:''; position:absolute; bottom:-9px; left:-4px; right:-8px; height:11px; border-radius:6px;
+    content:''; position:absolute; bottom:-10px; left:-6px; right:-10px; height:13px; border-radius:6px;
     background: linear-gradient(100deg, #201d19, #3d3a33 45%, #1a1815);
     box-shadow: 0 4px 6px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10);
-    transform: translateZ(-6px);
+    transform: translateZ(-7px);
     z-index:0;
   }
+  #npSpindle{
+    position:absolute; width:5px; height:5px; border-radius:50%; z-index:1; opacity:0;
+    background: radial-gradient(circle at 35% 30%, #d8d0b8, #8a7c58);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    transition: opacity 0.3s ease;
+  }
   #npPlatterRing{
-    position:relative; width:46px; height:46px; margin:0 auto;
+    position:relative; width:52px; height:52px; margin:0 auto;
     border-radius:50%;
     background: radial-gradient(circle at 62% 30%, #3d3d3d 0%, #1c1c1c 68%, #0e0e0e 100%);
     box-shadow: 0 6px 9px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.6);
@@ -526,18 +532,19 @@
     z-index:2;
   }
   #nowPlaying .disc{
-    width:46px; height:46px; border-width:1.5px; position:relative;
+    width:52px; height:52px; border-width:1.5px; position:relative;
     background:
       radial-gradient(circle at 62% 26%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 30%),
       repeating-radial-gradient(circle at center, #12181a 0, #12181a 1.5px, #1b2224 1.5px, #1b2224 3px);
     box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 1px 2px 3px rgba(255,255,255,0.08);
+    transition: transform 0.5s cubic-bezier(0.34,1.2,0.6,1), opacity 0.4s ease;
   }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
   #nowPlaying .disc::after{ width:6px; height:6px; }
   #npMiniTonearm{
-    position:absolute; top:-3px; right:-9px; width:30px; height:3px; border-radius:2px;
+    position:absolute; top:-3px; right:-10px; width:34px; height:3px; border-radius:2px;
     background: linear-gradient(90deg, #e8dcc0, #cfc0a0 55%, #9c8560); transform-origin: 90% 50%;
-    transform: rotate(-30deg) translateZ(4px); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1); z-index:5;
+    transform: rotate(-30deg) translateZ(4px); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1), opacity 0.4s ease; z-index:5;
     box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
   }
   #npPlayerBody.playing #npMiniTonearm{ transform: rotate(-2deg) translateZ(4px); }
@@ -548,6 +555,24 @@
   }
   #npMiniTonearm::after{ content:''; position:absolute; left:-2px; top:0.5px; width:5px; height:4px; background:#111; border-radius:1px; }
   #npPlayerBody .tonearm-post{ display:none; }
+  #npPowerCord{ position:absolute; bottom:-16px; left:-12px; width:20px; height:20px; z-index:50; touch-action:none; }
+  #npBlackout{ position:fixed; inset:0; background:#000; z-index:2147483647; display:none; }
+  body.unplugged #npBlackout{ display:block; }
+  #npLid{
+    position:absolute; top:-4px; left:-6px; right:2px; height:38px; border-radius:4px 4px 2px 2px;
+    background: linear-gradient(160deg, rgba(220,225,230,0.16), rgba(180,185,190,0.05));
+    border: 1px solid rgba(255,255,255,0.16); backdrop-filter: blur(0.5px);
+    transform-origin: 50% 100%; transform: rotateX(0deg) translateZ(3px);
+    transition: transform 0.55s cubic-bezier(0.34,1.05,0.6,1), opacity 0.4s ease;
+    z-index:8; cursor:pointer;
+  }
+  #npPlayerBody.lid-open #npLid{ transform: rotateX(-115deg) translateZ(3px); opacity:0.85; }
+
+  /* ---------- Play-with-it states: tap the lid / tonearm to move them, long-press the record to lift it off ---------- */
+  #npPlayerBody.arm-off #npMiniTonearm{ transform: rotate(58deg) translate(6px, -10px) translateZ(16px); opacity:0.95; }
+  #npPlayerBody.vinyl-off #nowPlaying .disc,
+  #npPlayerBody.vinyl-off .disc{ transform: translate(20px, 10px) translateZ(10px) rotate(8deg) scale(0.94); opacity:0.92; }
+  #npPlayerBody.vinyl-off #npSpindle{ opacity:1; }
 
   /* ---------- Angle-adjust trigger button, sits at the corner of the mini player ---------- */
   #npAngleBtn{
@@ -557,7 +582,6 @@
   }
   #npAngleBtn svg{ width:9px; height:9px; fill:var(--ink-dim); }
   #npAngleBtn.locked svg{ fill:var(--coral); }
-  body.rp-classic #npAngleBtn{ display:none; }
 
   /* ---------- Angle picker modal: a bigger, freely-draggable version of the same player ---------- */
   #npAngleStage{
@@ -601,35 +625,6 @@
     box-shadow:0 3px 5px rgba(0,0,0,0.5), inset 2px 2px 2px rgba(255,255,255,0.15);
   }
 
-  /* ---------- Retro: an actual open turntable — wide rectangular plinth with the platter ---------- */
-  /* sitting well inside it, and a real pivoted tonearm + headshell reaching onto the record ---------- */
-  /* from a post in the corner, the way a real record player is laid out. One-tap revert to Modern. */
-  body.rp-classic #npPlayerStage{ perspective:none; }
-  body.rp-classic #npPlayerBody{
-    transform-style:flat; transform:none; width:78px; height:52px;
-    background: linear-gradient(160deg, #3a332b, #221d18 55%, #17130f);
-    border-radius:5px; box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 0 0 1px rgba(0,0,0,0.45);
-    justify-content:flex-start; padding-left:6px;
-  }
-  body.rp-classic #npPlayerBody::after{ display:none; }
-  body.rp-classic #npPlatterRing{
-    width:42px; height:42px; margin:0;
-    background: radial-gradient(circle at 50% 50%, #2a2826 0%, #18100c 70%, #0c0b0a 100%);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), inset 0 0 4px rgba(0,0,0,0.6);
-  }
-  body.rp-classic #nowPlaying .disc{
-    width:36px; height:36px;
-    background:
-      radial-gradient(circle at 40% 34%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 32%),
-      repeating-radial-gradient(circle at center, #12181a 0, #12181a 1.5px, #1b2224 1.5px, #1b2224 3px);
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 1px 2px 3px rgba(255,255,255,0.06);
-  }
-  body.rp-classic #npMiniTonearm{
-    display:block; top:auto; bottom:6px; right:5px; width:24px; height:2.5px;
-    transform-origin: 92% 50%; transform: rotate(-46deg); z-index:6;
-  }
-  body.rp-classic #npPlayerBody.playing #npMiniTonearm{ transform: rotate(-20deg); }
-  body.rp-classic #npMiniTonearm::before{ width:10px; height:10px; right:-5px; top:-5px; }
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
   #npInfo .t{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #npInfo .a{ font-size:11.5px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -707,6 +702,7 @@
 </style>
 </head>
 <body>
+<div id="npBlackout"></div>
 <div id="rgbEdgeGlow" style="position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.16;box-shadow:inset 0 0 30px 6px var(--coral),inset 0 0 30px 6px var(--gold);-webkit-mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);"></div>
 
 
@@ -793,10 +789,13 @@
     <div id="npPlayerStage">
     <div id="npPlayerBody">
       <div id="npPlatterRing">
+        <div id="npSpindle"></div>
         <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
       </div>
       <div id="npMiniTonearm"></div>
       <div class="tonearm-post"></div>
+      <div id="npLid" title="Open/close the lid"></div>
+      <div id="npPowerCord"></div>
     </div>
     <button id="npAngleBtn" title="Adjust record player angle" aria-label="Adjust record player angle">
       <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
@@ -876,17 +875,6 @@
           <span>RGB glow speed</span><span id="rgbSpeedValue">8s</span>
         </div>
         <input type="range" id="rgbSpeedSlider" min="2" max="20" step="1" value="8" style="width:100%;">
-      </div>
-
-      <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div style="font-size:13px; color:var(--ink-dim);">Record player view</div>
-          <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Not loving the current look? Switch any time.</div>
-        </div>
-        <div style="display:flex; gap:6px; flex-shrink:0;">
-          <button class="tab" id="npStyleCorner" style="padding:5px 12px; font-size:12px;">Modern</button>
-          <button class="tab" id="npStyleClassic" style="padding:5px 12px; font-size:12px;">Retro</button>
-        </div>
       </div>
 
       <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px;">
@@ -1019,7 +1007,7 @@
 
       <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:16px;">
         <div style="font-size:13px; color:var(--ink-dim); margin-bottom:4px;">Roll back the app</div>
-        <div style="font-size:11px; color:var(--ink-dim); margin-bottom:10px;">Every version you've opened is saved right here on this device. Download an older one and open that file instead if something breaks — your library stays put either way, it's stored separately.</div>
+        <div style="font-size:11px; color:var(--ink-dim); margin-bottom:10px;">Every version you've opened is saved right here on this device. Tap one to revert instantly — your library stays put either way, it's stored separately.</div>
         <div id="versionSnapshotList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
@@ -1722,34 +1710,18 @@
   $('seekStyleLine').addEventListener('click', () => setSeekStyle('line'));
   $('seekStyleWaveform').addEventListener('click', () => setSeekStyle('waveform'));
 
-  // ---------------- Mini record player view: corner (new), classic (flat), or your own custom angle ----------------
-  let npPlayerStyle = 'corner'; // 'corner' | 'classic' | 'custom'
-  function setNpPlayerStyle(style){
-    npPlayerStyle = style;
-    document.body.classList.toggle('rp-classic', style === 'classic');
-    if(style === 'corner'){
-      document.documentElement.style.removeProperty('--np-tilt');
-      document.documentElement.style.removeProperty('--np-spin');
-    }
-    $('npStyleCorner').classList.toggle('active', style === 'corner');
-    $('npStyleClassic').classList.toggle('active', style === 'classic');
-    dbPut('meta', { key: 'npPlayerStyle', value: style });
-  }
-  $('npStyleCorner').addEventListener('click', () => setNpPlayerStyle('corner'));
-  $('npStyleClassic').addEventListener('click', () => setNpPlayerStyle('classic'));
-
   // ---------------- Record player angle picker: open it, drag to spin it around, lock it in ----------------
+  function resetNpAngleToDefault(){
+    document.documentElement.style.removeProperty('--np-tilt');
+    document.documentElement.style.removeProperty('--np-spin');
+    dbPut('meta', { key: 'npPlayerAngle', value: null });
+  }
   function applyNpAngleVars(tiltX, spinZ){
     document.documentElement.style.setProperty('--np-tilt', tiltX + 'deg');
     document.documentElement.style.setProperty('--np-spin', spinZ + 'deg');
   }
   function saveCustomNpAngle(tiltX, spinZ){
     applyNpAngleVars(tiltX, spinZ);
-    document.body.classList.remove('rp-classic');
-    npPlayerStyle = 'custom';
-    $('npStyleCorner').classList.remove('active');
-    $('npStyleClassic').classList.remove('active');
-    dbPut('meta', { key: 'npPlayerStyle', value: 'custom' });
     dbPut('meta', { key: 'npPlayerAngle', value: { tiltX, spinZ } });
   }
   let npAngleLocked = false;
@@ -2061,12 +2033,11 @@
   async function loadSavedTheme(){
     try{
       const metaRows = await dbGetAll('meta');
-      // Save a rollback point for this version, first time it's ever run. Keeps the last 3.
+      // Save a rollback point for this version, first time it's ever run — every version stays, none get pruned.
       const versionKey = 'versionSnapshot_' + APP_VERSION;
-      const snaps = metaRows.filter(r => r.key.indexOf('versionSnapshot_') === 0).sort((a,b) => a.value.savedAt - b.value.savedAt);
+      const snaps = metaRows.filter(r => r.key.indexOf('versionSnapshot_') === 0);
       if(!snaps.find(r => r.key === versionKey)){
         dbPut('meta', { key: versionKey, value: { version: APP_VERSION, html: SHELL_SNAPSHOT_HTML, savedAt: Date.now() } });
-        if(snaps.length >= 3) dbDelete('meta', snaps[0].key); // drop the oldest once we've got 3+
       }
       const customRow = metaRows.find(r => r.key === 'customTheme');
       if(customRow && customRow.value){
@@ -2112,18 +2083,11 @@
       }
       const seekStyleRow = metaRows.find(r => r.key === 'seekStyle');
       setSeekStyle(seekStyleRow && seekStyleRow.value === 'waveform' ? 'waveform' : 'line');
-      const npStyleRow = metaRows.find(r => r.key === 'npPlayerStyle');
       const npAngleRow = metaRows.find(r => r.key === 'npPlayerAngle');
       const npLockRow = metaRows.find(r => r.key === 'npAngleLocked');
       setNpAngleLocked(!!(npLockRow && npLockRow.value));
-      if(npStyleRow && npStyleRow.value === 'custom' && npAngleRow && npAngleRow.value){
+      if(npAngleRow && npAngleRow.value){
         applyNpAngleVars(npAngleRow.value.tiltX, npAngleRow.value.spinZ);
-        npPlayerStyle = 'custom';
-        document.body.classList.remove('rp-classic');
-        $('npStyleCorner').classList.remove('active');
-        $('npStyleClassic').classList.remove('active');
-      } else {
-        setNpPlayerStyle(npStyleRow && npStyleRow.value === 'classic' ? 'classic' : 'corner');
       }
       const autoVolRow = metaRows.find(r => r.key === 'autoVolume');
       setAutoVolume(autoVolRow ? !!autoVolRow.value : true);
@@ -2144,8 +2108,14 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '32.3';
+  const APP_VERSION = '32.4';
   const CHANGELOG = [
+    { version: '32.4', title: 'One-tap revert, and a proper interactive record player', items: [
+      'Settings → More now lets you jump back to any previous version with a single tap — no download, reverts the running app instantly',
+      'Every version you open from now on is kept, not just the last few',
+      'Removed the Retro/Modern toggle — the mini record player is now one proper angled turntable, bigger and fully visible',
+      'You can now open/close the lid, swing the tonearm off to the side, and lift the vinyl off the platter — tap the lid, tap the tonearm, long-press the record',
+    ]},
     { version: '32.3', title: 'Retro turntable rebuilt as an actual open record player', items: [
       'Retro view is now a proper wide plinth with the platter/record clearly visible inside it, and a real pivoted tonearm reaching onto the record — not a squeezed corner icon',
       'Seek position line is now always a flat, straight line — no more bass-driven ripple bending it',
@@ -2279,22 +2249,26 @@
       const d = new Date(r.value.savedAt);
       const dateStr = d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
       const isCurrent = r.value.version === APP_VERSION;
-      return `<button class="playlist-pick-btn" data-snap-key="${r.key}" style="display:flex; justify-content:space-between; align-items:center;">
+      return `<button class="playlist-pick-btn" data-snap-key="${r.key}" style="display:flex; justify-content:space-between; align-items:center;" ${isCurrent ? 'disabled' : ''}>
         <span>v${r.value.version}${isCurrent ? ' (current)' : ''}</span>
-        <span style="font-size:11px; color:var(--ink-dim);">${dateStr} — ${isCurrent ? 'tap to save a copy' : 'tap to download'}</span>
+        <span style="font-size:11px; color:var(--ink-dim);">${dateStr}${isCurrent ? '' : ' — tap to revert'}</span>
       </button>`;
     }).join('');
     list.querySelectorAll('[data-snap-key]').forEach(btn => {
+      if(btn.disabled) return;
       btn.addEventListener('click', async () => {
         const row = rows.find(r => r.key === btn.dataset.snapKey);
         if(!row) return;
-        const blob = new Blob([row.value.html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Sidecut-v${row.value.version}.html`;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-        toast(`Saved v${row.value.version} — open that file any time to go back`);
+        // One tap, no confirmation dialog — swaps the running page to that version's
+        // exact saved code, right now, no download and no network round trip. Your
+        // library and settings live in IndexedDB, completely separate from this, so
+        // they're untouched no matter which version of the app is running.
+        toast(`Reverting to v${row.value.version}…`);
+        setTimeout(() => {
+          document.open();
+          document.write(row.value.html);
+          document.close();
+        }, 300);
       });
     });
   }
@@ -2304,9 +2278,8 @@
     delete THEMES.custom;
     applyTheme('rosegold');
     setNpAngleLocked(false);
-    setNpPlayerStyle('corner');
+    resetNpAngleToDefault();
     dbPut('meta', { key: 'customTheme', value: null });
-    dbPut('meta', { key: 'npPlayerAngle', value: null });
     renderThemeOptions();
     toast('Appearance reset to defaults');
   });
@@ -4063,8 +4036,42 @@
   document.addEventListener('click', (e) => {
     if(!e.target.closest('#npInfo')) $('nameBubble').style.display = 'none';
   });
+  // ---------------- Play with the record player: open the lid, take off the tonearm, lift the vinyl ----------------
+  $('npLid').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('npPlayerBody').classList.toggle('lid-open');
+  });
+  $('npMiniTonearm').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('npPlayerBody').classList.toggle('arm-off');
+  });
+  let discPressTimer = null, discLongPressed = false;
+  $('npDisc').addEventListener('pointerdown', () => {
+    discLongPressed = false;
+    discPressTimer = setTimeout(() => {
+      discLongPressed = true;
+      $('npPlayerBody').classList.toggle('vinyl-off');
+    }, 550);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => $('npDisc').addEventListener(ev, () => clearTimeout(discPressTimer)));
+  (function(){
+    let dragStart = null;
+    const cord = $('npPowerCord');
+    cord.addEventListener('pointerdown', (e) => { e.stopPropagation(); dragStart = { x: e.clientX, y: e.clientY }; });
+    cord.addEventListener('pointermove', (e) => {
+      if(!dragStart) return;
+      if(Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y) > 24){
+        dragStart = null;
+        document.body.classList.add('unplugged');
+        try{ activeAudio().pause(); }catch(err){}
+      }
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(ev => cord.addEventListener(ev, () => dragStart = null));
+    $('npBlackout').addEventListener('click', () => document.body.classList.remove('unplugged'));
+  })();
   $('npDisc').addEventListener('click', () => {
     if(queueIndex < 0 || queueIndex >= queue.length) return;
+    if(discLongPressed){ discLongPressed = false; return; } // long-press already toggled the vinyl — don't also expand
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(!t) return;
     const discEl = $('npDisc');
