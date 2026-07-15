@@ -5937,6 +5937,10 @@
       if(pinRow && pinRow.value && pinRow.value !== APP_VERSION){
         const snapRow = await dbGet('meta', 'versionSnapshot_' + pinRow.value);
         if(snapRow && snapRow.value && snapRow.value.html){
+          // Clear the pin before swapping, not after — otherwise switching away from an old
+          // version using ITS OWN (older) switch buttons leaves this pin stuck, and the next
+          // reload swaps you right back here instead of wherever you just picked. One-shot use.
+          await dbDelete('meta', 'pinnedVersion');
           document.open(); document.write(snapRow.value.html); document.close();
           return;
         }
