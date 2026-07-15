@@ -695,6 +695,7 @@
 </style>
 </head>
 <body>
+<div id="rgbEdgeGlow" style="position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.16;box-shadow:inset 0 0 30px 6px var(--coral),inset 0 0 30px 6px var(--gold);-webkit-mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);"></div>
 
 
 <header>
@@ -1463,6 +1464,7 @@
     lineLevel = 0;
     glowFrameSkip = 0;
     flattenSeekWave();
+    const eg = $('rgbEdgeGlow'); if(eg) eg.style.opacity = 0;
   }
   let glowFrameSkip = 0;
   function startGlowSync(){
@@ -1487,6 +1489,8 @@
       const raw = Math.min(1, (sum / bassBins) / 220);
       // Fast attack, slow release — snaps up on the hit, eases back down, never twitchy.
       lineLevel = raw > lineLevel ? lineLevel + (raw - lineLevel) * 0.6 : lineLevel + (raw - lineLevel) * 0.08;
+      const edgeGlow = $('rgbEdgeGlow');
+      if(edgeGlow) edgeGlow.style.opacity = (0.16 + lineLevel * 0.7).toFixed(2);
       if(lineLevel < 0.03){
         svg.classList.remove('live');
         path.setAttribute('d', 'M0,11 L100,11');
