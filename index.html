@@ -504,11 +504,12 @@
 #npPlayerStage{ perspective: 320px; perspective-origin: 68% 30%; flex-shrink:0; position:relative; }
   #npPlayerBody{
     position:relative; width:55px; height:51px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none;
+    display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none;
     transform-style:preserve-3d;
     /* whole rig rotates together as one rigid object — this is the "camera angle" on the deck */
     transform: rotateX(var(--np-tilt, 46deg)) rotateZ(var(--np-spin, 26deg));
   }
+  #npPlayerBody:active{ cursor:grabbing; }
   #npPlayerBody::after{
     /* chassis base — a sibling plate sitting just behind the platter, moves with the rig */
     content:''; position:absolute; bottom:-8px; left:-5px; right:-8px; height:11px; border-radius:5px;
@@ -798,8 +799,8 @@
       <div id="npLid" title="Open/close the lid"></div>
     </div>
     <div id="npPowerCord"></div>
-    <button id="npAngleBtn" title="Adjust record player angle" aria-label="Adjust record player angle">
-      <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+    <button id="npAngleBtn" title="Lock the angle so it can't be dragged by accident" aria-label="Lock record player angle">
+      <svg id="npAngleBtnIcon" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
     </button>
     </div>
     <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div>
@@ -1285,7 +1286,7 @@
 <div class="modal-backdrop" id="npAngleBackdrop">
   <div class="modal">
     <h3>Record player angle</h3>
-    <div style="font-size:12px; color:var(--ink-dim); margin-bottom:6px;">Drag the record to spin it around and tilt it to your angle.</div>
+    <div style="font-size:12px; color:var(--ink-dim); margin-bottom:6px;">Drag the record to spin it around and tilt it to your angle — the mini player picks up whatever you set here.</div>
     <div id="npAngleStageWrap" style="padding:22px 0 12px;">
       <div id="npAngleStage">
         <div id="npAngleBody">
@@ -1300,13 +1301,6 @@
       <button class="icon-btn" id="npAnglePlayBtn" title="Play/pause" style="width:44px; height:44px; border-radius:50%; background:var(--coral); display:flex; align-items:center; justify-content:center;">
         <svg id="npAnglePlayIcon" viewBox="0 0 24 24" fill="#161616" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
       </button>
-    </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-      <div>
-        <div style="font-size:13px; color:var(--ink-dim);">Lock this angle</div>
-        <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">Stops it from being dragged by accident.</div>
-      </div>
-      <button class="tab" id="npAngleLockBtn" style="padding:5px 12px; font-size:12px; flex-shrink:0;">Off</button>
     </div>
     <div class="modal-btns">
       <button class="cancel" id="npAngleReset" style="flex:1;">Reset to corner</button>
@@ -1716,7 +1710,8 @@
   $('seekStyleLine').addEventListener('click', () => setSeekStyle('line'));
   $('seekStyleWaveform').addEventListener('click', () => setSeekStyle('waveform'));
 
-  // ---------------- Record player angle picker: open it, drag to spin it around, lock it in ----------------
+  // ---------------- Record player angle: drag the mini player itself to spin/tilt it, ----------------
+  // long-press it to open the bigger play area, npAngleBtn is now just the lock toggle.
   function resetNpAngleToDefault(){
     document.documentElement.style.removeProperty('--np-tilt');
     document.documentElement.style.removeProperty('--np-spin');
@@ -1733,19 +1728,68 @@
   let npAngleLocked = false;
   function setNpAngleLocked(v){
     npAngleLocked = v;
-    $('npAngleLockBtn').textContent = v ? 'On' : 'Off';
-    $('npAngleLockBtn').classList.toggle('active', v);
     $('npAngleBtn').classList.toggle('locked', v);
+    $('npAngleBtn').title = v ? 'Unlock the angle' : "Lock the angle so it can't be dragged by accident";
     dbPut('meta', { key: 'npAngleLocked', value: v });
   }
-  $('npAngleLockBtn').addEventListener('click', () => setNpAngleLocked(!npAngleLocked));
+  $('npAngleBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setNpAngleLocked(!npAngleLocked);
+    toast(npAngleLocked ? 'Angle locked' : 'Angle unlocked — drag the player to spin it');
+  });
+
+  // Drag directly on the mini player in the now-playing bar. Gated to the platter/body
+  // background only — the lid, tonearm, disc, power cord and lock button all have their
+  // own tap/long-press behavior and take priority over a spin-drag. A press that doesn't
+  // turn into a drag, held past 550ms, opens the bigger play area for a roomier canvas.
+  let miniDragState = null, miniDragMoved = false, miniLongPressTimer = null;
+  const MINI_DRAG_EXCLUDE = '#npLid, #npMiniTonearm, #npDisc, #npPowerCord, #npAngleBtn';
+  $('npPlayerBody').addEventListener('pointerdown', (e) => {
+    if(e.target.closest(MINI_DRAG_EXCLUDE)) return;
+    if(npAngleLocked) return;
+    const cs = getComputedStyle(document.documentElement);
+    const tiltX = parseFloat(cs.getPropertyValue('--np-tilt')) || 46;
+    const spinZ = parseFloat(cs.getPropertyValue('--np-spin')) || 26;
+    miniDragState = { startX: e.clientX, startY: e.clientY, tiltX, spinZ };
+    miniDragMoved = false;
+    try{ $('npPlayerBody').setPointerCapture(e.pointerId); }catch(err){}
+    clearTimeout(miniLongPressTimer);
+    miniLongPressTimer = setTimeout(() => {
+      if(!miniDragMoved) openNpAnglePicker();
+    }, 550);
+  });
+  $('npPlayerBody').addEventListener('pointermove', (e) => {
+    if(!miniDragState) return;
+    const dx = e.clientX - miniDragState.startX;
+    const dy = e.clientY - miniDragState.startY;
+    if(Math.hypot(dx, dy) > 4){
+      miniDragMoved = true;
+      clearTimeout(miniLongPressTimer);
+    }
+    if(!miniDragMoved) return;
+    const spinZ = Math.max(-180, Math.min(180, miniDragState.spinZ + dx * 0.7));
+    const tiltX = Math.max(8, Math.min(85, miniDragState.tiltX - dy * 0.45));
+    applyNpAngleVars(tiltX, spinZ);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => {
+    $('npPlayerBody').addEventListener(ev, () => {
+      clearTimeout(miniLongPressTimer);
+      if(miniDragState && miniDragMoved){
+        const cs = getComputedStyle(document.documentElement);
+        const tiltX = parseFloat(cs.getPropertyValue('--np-tilt')) || 46;
+        const spinZ = parseFloat(cs.getPropertyValue('--np-spin')) || 26;
+        saveCustomNpAngle(tiltX, spinZ);
+      }
+      miniDragState = null;
+    });
+  });
 
   let modalTiltX = 46, modalSpinZ = 26, angleDragState = null;
   function renderAngleStage(){
     $('npAngleBody').style.transform = `rotateX(${modalTiltX}deg) rotateZ(${modalSpinZ}deg)`;
   }
   $('npAngleStage').addEventListener('pointerdown', (e) => {
-    if(npAngleLocked){ toast('Locked — tap "On" above to unlock it first'); return; }
+    if(npAngleLocked){ toast('Locked — tap the lock icon on the mini player to unlock it first'); return; }
     angleDragState = { startX: e.clientX, startY: e.clientY, tiltX: modalTiltX, spinZ: modalSpinZ };
     $('npAngleStage').classList.add('dragging');
     try{ $('npAngleStage').setPointerCapture(e.pointerId); }catch(err){}
@@ -1759,14 +1803,17 @@
     renderAngleStage();
   });
   ['pointerup','pointercancel','pointerleave'].forEach(ev => {
-    $('npAngleStage').addEventListener(ev, () => { angleDragState = null; $('npAngleStage').classList.remove('dragging'); });
+    $('npAngleStage').addEventListener(ev, () => {
+      angleDragState = null;
+      $('npAngleStage').classList.remove('dragging');
+      if(!npAngleLocked) saveCustomNpAngle(modalTiltX, modalSpinZ);
+    });
   });
   $('npAnglePlayBtn').addEventListener('click', (e) => {
     e.stopPropagation();
     $('playPauseBtn').click();
   });
-  $('npAngleBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
+  function openNpAnglePicker(){
     const cs = getComputedStyle(document.documentElement);
     modalTiltX = parseFloat(cs.getPropertyValue('--np-tilt')) || 46;
     modalSpinZ = parseFloat(cs.getPropertyValue('--np-spin')) || 26;
@@ -1777,11 +1824,15 @@
     $('npAnglePlayIcon').innerHTML = (t && !activeAudio().paused)
       ? '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
     $('npAngleBackdrop').style.display = 'flex';
-  });
+  }
+  // Long-press anywhere on the mini player (that isn't a drag, and isn't one of the
+  // other interactive parts) opens the bigger play area for a roomier canvas to spin in —
+  // handled inside the drag block above via miniLongPressTimer.
   $('npAngleReset').addEventListener('click', () => {
     if(npAngleLocked){ toast('Locked — unlock it first'); return; }
     modalTiltX = 46; modalSpinZ = 26;
     renderAngleStage();
+    saveCustomNpAngle(46, 26);
   });
   $('npAngleDone').addEventListener('click', () => {
     saveCustomNpAngle(modalTiltX, modalSpinZ);
@@ -2120,8 +2171,15 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '32.5';
+  const APP_VERSION = '32.6';
   const CHANGELOG = [
+    { version: '32.6', title: 'Version switching actually sticks, and the mini player is now the play area', items: [
+      'Fixed version switching so it no longer silently bounces back to the newest version — an old version\'s own update-checker was force-reloading over your pick',
+      'Switching to an older version now sticks across refreshes too, until you pick something else',
+      'The mini record player is now directly draggable — spin and tilt it right in the now-playing bar, no popup needed',
+      'Long-press the mini player to open the bigger angle picker as a roomier play area',
+      'The lock toggle moved from the popup onto the mini player itself, as the little dial-corner button',
+    ]},
     { version: '32.5', title: 'Free switching between versions, playback controls in the angle picker, smaller player', items: [
       'Version switching now works freely in both directions, any number of times — not just one revert',
       'Added a play/pause button right in the record player angle picker, and the record now correctly spins only while actually playing',
@@ -2276,6 +2334,7 @@
     if(pinned){
       list.innerHTML += `<button class="playlist-pick-btn" id="snapGoLatest" style="text-align:center; margin-top:2px;">↩ Back to the actual latest version</button>`;
       $('snapGoLatest').addEventListener('click', async () => {
+        window.__SIDECUT_PIN_SWITCHING__ = true;
         await dbDelete('meta', 'pinnedVersion');
         toast('Loading the latest version…');
         setTimeout(() => window.location.reload(), 300);
@@ -2291,6 +2350,7 @@
         // that pin first thing and swaps itself to the pinned version — so you're never
         // stuck without a way back, no matter which version you're currently viewing.
         // Your library and settings live in IndexedDB, completely separate from this.
+        window.__SIDECUT_PIN_SWITCHING__ = true;
         await dbPut('meta', { key: 'pinnedVersion', value: row.value.version });
         toast(`Switching to v${row.value.version}…`);
         setTimeout(() => window.location.reload(), 300);
@@ -5937,11 +5997,26 @@
       if(pinRow && pinRow.value && pinRow.value !== APP_VERSION){
         const snapRow = await dbGet('meta', 'versionSnapshot_' + pinRow.value);
         if(snapRow && snapRow.value && snapRow.value.html){
-          // Clear the pin before swapping, not after — otherwise switching away from an old
-          // version using ITS OWN (older) switch buttons leaves this pin stuck, and the next
-          // reload swaps you right back here instead of wherever you just picked. One-shot use.
-          await dbDelete('meta', 'pinnedVersion');
-          document.open(); document.write(snapRow.value.html); document.close();
+          // NOTE: the pin is deliberately NOT cleared here. It's sticky — it stays set across
+          // refreshes so an old version stays picked until you explicitly choose something
+          // else (another version, or "back to latest"), both of which clear/replace it
+          // themselves before reloading. Clearing it here (one-shot) used to mean any plain
+          // refresh while viewing an old version silently bounced you back to latest, which
+          // looked like version-switching just not working.
+          //
+          // The snapshot HTML we're about to inject is a full copy of some past version of
+          // this app, complete with its own <script> that registers a service worker and
+          // force-reloads on controllerchange. Left alone, that old code sees the (possibly
+          // newer) SW already controlling the page as "an update just arrived" and immediately
+          // reloads away from the very version we're trying to view — which is exactly why
+          // switching to an older version (or back to latest) could silently bounce back on
+          // its own. Flip a flag the snapshot's own boot code checks before it registers its
+          // service worker at all, so a viewed snapshot never fights with the live SW.
+          const flaggedHtml = snapRow.value.html.replace(
+            '<script>',
+            '<script>window.__SIDECUT_SNAPSHOT_VIEW__ = true;'
+          );
+          document.open(); document.write(flaggedHtml); document.close();
           return;
         }
       }
@@ -6022,7 +6097,7 @@
   // Only matters once these files are hosted online (https) — a plain
   // downloaded/local file won't trigger an install prompt, that's an OS-level
   // restriction no website can bypass.
-  if('serviceWorker' in navigator){
+  if('serviceWorker' in navigator && !window.__SIDECUT_SNAPSHOT_VIEW__){
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').then((reg) => {
         // Auto-update cache: check for a newer service worker right away, then every
@@ -6038,14 +6113,18 @@
       // When the new worker takes control, the cache has already been swapped over —
       // reload once so the page picks up the new index.html instead of running old JS
       // against a newer cache. Guarded so it only ever fires once per page life, and
-      // never steals the What's New popup out from under someone mid-read.
+      // never steals the What's New popup out from under someone mid-read. Also guarded
+      // against firing while a version-pin switch is in flight (see __SIDECUT_PIN_SWITCHING__
+      // below) — otherwise the SW's own reload races the pin's reload and can win, dropping
+      // the pin before boot() ever gets a chance to read it back on the next load.
       let reloadedForUpdate = false;
       function reloadForUpdate(){
-        if(reloadedForUpdate) return;
+        if(reloadedForUpdate || window.__SIDECUT_PIN_SWITCHING__) return;
         reloadedForUpdate = true;
         // Wait slightly longer than the What's New popup's own 900ms show-delay, so if
         // it's about to appear, it's already on screen by the time we check for it.
         setTimeout(() => {
+          if(window.__SIDECUT_PIN_SWITCHING__) return;
           if($('whatsNewBackdrop').style.display === 'flex'){
             $('whatsNewClose').addEventListener('click', () => window.location.reload(), { once:true });
             $('whatsNewBackdrop').addEventListener('click', (e) => { if(e.target === $('whatsNewBackdrop')) window.location.reload(); }, { once:true });
