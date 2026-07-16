@@ -53,6 +53,7 @@
     transition: transform 0.1s ease, background 0.25s ease, border-color 0.25s ease;
   }
   .action-pill:active{ transform: scale(0.95); }
+  .action-pill{ transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease; }
   .action-pill.primary{ background: var(--coral); color:#161616; border-color:var(--coral); }
 
   /* ---------- Empty state ---------- */
@@ -487,7 +488,7 @@
   #nowPlaying{
     position:fixed; left:0; right:0; bottom:0; background: var(--bg-raised); border-top:1px solid var(--line);
     padding:10px 16px calc(10px + env(safe-area-inset-bottom)); display:none; flex-direction:column; gap:8px;
-    transition: padding 0.25s ease, gap 0.25s ease;
+    transition: padding 0.3s cubic-bezier(0.4,0,0.2,1), gap 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, backdrop-filter 0.3s ease;
   }
   #nowPlaying.mini{ padding:0; gap:0; }
   #nowPlaying.mini .np-row, #nowPlaying.mini .seek-row span, #nowPlaying.mini #waveformBar, #nowPlaying.mini #seekBar, #nowPlaying.mini .seek-line-wrap{ display:none; }
@@ -501,127 +502,37 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-#npPlayerStage{ perspective: 320px; perspective-origin: 68% 30%; flex-shrink:0; position:relative; }
+#npPlayerStage{ flex-shrink:0; position:relative; }
   #npPlayerBody{
-    position:relative; width:55px; height:51px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none;
-    transform-style:preserve-3d;
-    /* whole rig rotates together as one rigid object — this is the "camera angle" on the deck */
-    transform: rotateX(var(--np-tilt, 46deg)) rotateZ(var(--np-spin, 26deg));
-  }
-  #npPlayerBody:active{ cursor:grabbing; }
-  #npPlayerBody::after{
-    /* chassis base — a sibling plate sitting just behind the platter, moves with the rig */
-    content:''; position:absolute; bottom:-8px; left:-5px; right:-8px; height:11px; border-radius:5px;
-    background: linear-gradient(100deg, #201d19, #3d3a33 45%, #1a1815);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10);
-    transform: translateZ(-6px);
-    z-index:0;
-  }
-  #npSpindle{
-    position:absolute; width:4px; height:4px; border-radius:50%; z-index:1; opacity:0;
-    background: radial-gradient(circle at 35% 30%, #d8d0b8, #8a7c58);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.6);
-    transition: opacity 0.3s ease;
-  }
-  #npPlatterRing{
-    position:relative; width:44px; height:44px; margin:0 auto;
-    border-radius:50%;
-    background: radial-gradient(circle at 62% 30%, #3d3d3d 0%, #1c1c1c 68%, #0e0e0e 100%);
-    box-shadow: 0 6px 9px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.6);
-    display:flex; align-items:center; justify-content:center;
-    z-index:2;
+    position:relative; width:46px; height:46px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   #nowPlaying .disc{
-    width:44px; height:44px; border-width:1.5px; position:relative;
+    width:46px; height:46px; border-width:1.5px; position:relative;
     background:
-      radial-gradient(circle at 62% 26%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 30%),
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 32%),
       repeating-radial-gradient(circle at center, #12181a 0, #12181a 1.5px, #1b2224 1.5px, #1b2224 3px);
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 1px 2px 3px rgba(255,255,255,0.08);
-    transition: transform 0.5s cubic-bezier(0.34,1.2,0.6,1), opacity 0.4s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent);
+    transition: transform 0.4s cubic-bezier(0.34,1.2,0.6,1);
   }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
-  #nowPlaying .disc::after{ width:6px; height:6px; }
-  #npMiniTonearm{
-    position:absolute; top:-3px; right:-8px; width:28px; height:2.5px; border-radius:2px;
-    background: linear-gradient(90deg, #e8dcc0, #cfc0a0 55%, #9c8560); transform-origin: 90% 50%;
-    transform: rotate(-30deg) translateZ(4px); transition: transform 0.5s cubic-bezier(0.34,1.1,0.6,1), opacity 0.4s ease; z-index:5;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35);
-  }
-  #npPlayerBody.playing #npMiniTonearm{ transform: rotate(-2deg) translateZ(4px); }
-  #npMiniTonearm::before{
-    content:''; position:absolute; right:-5px; top:-5px; width:10px; height:10px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #5a5a5a, #232323);
-    box-shadow:0 2px 3px rgba(0,0,0,0.5), inset 1px 1px 1px rgba(255,255,255,0.15);
-  }
-  #npMiniTonearm::after{ content:''; position:absolute; left:-2px; top:0.5px; width:5px; height:4px; background:#111; border-radius:1px; }
-  #npPlayerBody .tonearm-post{ display:none; }
-  #npLid{
-    position:absolute; top:-3px; left:-5px; right:2px; height:32px; border-radius:4px 4px 2px 2px;
-    background: linear-gradient(160deg, rgba(220,225,230,0.16), rgba(180,185,190,0.05));
-    border: 1px solid rgba(255,255,255,0.16); backdrop-filter: blur(0.5px);
-    transform-origin: 50% 100%; transform: rotateX(0deg) translateZ(3px);
-    transition: transform 0.55s cubic-bezier(0.34,1.05,0.6,1), opacity 0.4s ease;
-    z-index:8; cursor:pointer;
-  }
-  #npPlayerBody.lid-open #npLid{ transform: rotateX(-115deg) translateZ(3px); opacity:0.85; }
 
-  /* ---------- Play-with-it states: tap the lid / tonearm to move them, long-press the record to lift it off ---------- */
-  #npPlayerBody.arm-off #npMiniTonearm{ transform: rotate(58deg) translate(6px, -10px) translateZ(16px); opacity:0.95; }
-  #npPlayerBody.vinyl-off #nowPlaying .disc,
-  #npPlayerBody.vinyl-off .disc{ transform: translate(20px, 10px) translateZ(10px) rotate(8deg) scale(0.94); opacity:0.92; }
-  #npPlayerBody.vinyl-off #npSpindle{ opacity:1; }
-
-  /* ---------- Angle-adjust trigger button, sits at the corner of the mini player ---------- */
-  #npAngleBtn{
-    position:absolute; z-index:6; bottom:-3px; left:-3px; width:17px; height:17px; border-radius:50%;
-    background:rgba(10,10,10,0.75); border:1px solid rgba(255,255,255,0.28);
-    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+  /* ---------- Liquid glass: frosted, translucent surfaces for the now-playing bar and modals ---------- */
+  body.liquid-glass-on .modal{
+    background: color-mix(in srgb, var(--bg-raised) 68%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.08);
   }
-  #npAngleBtn svg{ width:9px; height:9px; fill:var(--ink-dim); }
-  #npAngleBtn.locked svg{ fill:var(--coral); }
-
-  /* ---------- Angle picker modal: a bigger, freely-draggable version of the same player ---------- */
-  #npAngleStage{
-    perspective:440px; perspective-origin:68% 30%; width:170px; height:170px;
-    touch-action:none; cursor:grab; margin:0 auto;
+  body.liquid-glass-on .action-pill{
+    background: color-mix(in srgb, var(--bg-raised) 55%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
   }
-  #npAngleStage.dragging{ cursor:grabbing; }
-  #npAngleBody{
-    position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    transform-style:preserve-3d;
-  }
-  #npAngleBody::after{
-    content:''; position:absolute; bottom:-10px; left:2px; right:-6px; height:14px; border-radius:8px;
-    background: linear-gradient(100deg, #201d19, #3d3a33 45%, #1a1815);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10);
-    transform: translateZ(-16px); z-index:0;
-  }
-  #npAnglePlatterRing{
-    position:relative; width:140px; height:140px; border-radius:50%;
-    background: radial-gradient(circle at 62% 30%, #3d3d3d 0%, #1c1c1c 68%, #0e0e0e 100%);
-    box-shadow: 0 10px 18px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.6);
-    display:flex; align-items:center; justify-content:center; z-index:2;
-  }
-  #npAngleDisc{
-    width:132px; height:132px; border-width:2px; position:relative;
-    background:
-      radial-gradient(circle at 62% 26%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 30%),
-      repeating-radial-gradient(circle at center, #12181a 0, #12181a 1.5px, #1b2224 1.5px, #1b2224 3px);
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 2px 3px 5px rgba(255,255,255,0.08);
-    animation: spin 5s linear infinite; animation-play-state: paused;
-  }
-  #npAngleDisc.spinning{ animation-play-state: running; }
-  #npAngleTonearm{
-    position:absolute; top:-10px; right:-26px; width:84px; height:5px; border-radius:3px;
-    background: linear-gradient(90deg, #e8dcc0, #cfc0a0 55%, #9c8560); transform-origin: 90% 50%;
-    transform: rotate(-30deg) translateZ(12px);
-    box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35); z-index:5;
-  }
-  #npAngleTonearm::before{
-    content:''; position:absolute; right:-16px; top:-16px; width:30px; height:30px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #5a5a5a, #232323);
-    box-shadow:0 3px 5px rgba(0,0,0,0.5), inset 2px 2px 2px rgba(255,255,255,0.15);
+  body.liquid-glass-on #nowPlaying{
+    background: color-mix(in srgb, var(--bg-raised) 62%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
   }
 
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
@@ -692,6 +603,13 @@
   .modal-btns button{ flex:1; padding:11px; border-radius:20px; border:none; font-weight:600; font-size:14px; cursor:pointer; }
   .modal-btns .cancel{ background:none; border:1px solid var(--line); color:var(--ink-dim); }
   .modal-btns .confirm{ background:var(--coral); color:#161616; }
+  .stat-add-btn{
+    position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:50%;
+    border:1px solid var(--line); background:var(--bg-raised); color:var(--ink-dim);
+    font-size:15px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    padding:0; transition:background .15s, color .15s;
+  }
+  .stat-add-btn:active{ background:var(--coral); color:#161616; }
   .playlist-pick-btn{
     width:100%; text-align:left; padding:12px 14px; border-radius:10px;
     background:var(--bg); border:1px solid var(--line); color:var(--ink);
@@ -800,17 +718,8 @@
   <div class="np-row">
     <div id="npPlayerStage">
     <div id="npPlayerBody">
-      <div id="npPlatterRing">
-        <div id="npSpindle"></div>
-        <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
-      </div>
-      <div id="npMiniTonearm"></div>
-      <div class="tonearm-post"></div>
-      <div id="npLid" title="Open/close the lid"></div>
+      <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
     </div>
-    <button id="npAngleBtn" title="Lock the angle so it can't be dragged by accident" aria-label="Lock record player angle">
-      <svg id="npAngleBtnIcon" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-    </button>
     </div>
     <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div>
       <div class="name-bubble" id="nameBubble" style="display:none;">
@@ -954,6 +863,12 @@
       </div>
 
       <div style="margin-top:18px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:var(--ink-dim);">Liquid glass mode</span>
+        <button class="tab" id="liquidGlassToggle" style="padding:5px 12px; font-size:12px;">Off</button>
+      </div>
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:4px;">Frosted, translucent panels for the now-playing bar and popups, with a soft blur behind them.</div>
+
+      <div style="margin-top:18px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:13px; color:var(--ink-dim);">Auto-adjust volume</span>
         <button class="tab" id="autoVolumeToggle" style="padding:5px 12px; font-size:12px;">On</button>
       </div>
@@ -1013,7 +928,7 @@
 
       <div style="margin-top:12px;">
         <button class="playlist-pick-btn" id="resetAppearanceBtn" style="text-align:center;">Reset appearance to defaults</button>
-        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;">If a theme or record player angle ever gets stuck looking wrong, this puts theme, record player angle, and lock back to how they started — nothing else is touched.</div>
+        <div style="font-size:11px; color:var(--ink-dim); margin-top:6px; text-align:center;">If a theme or liquid glass mode ever gets stuck looking wrong, this puts theme and liquid glass back to how they started — nothing else is touched.</div>
       </div>
 
       <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:16px;">
@@ -1291,32 +1206,6 @@
   </div>
 </div>
 
-<!-- Record player angle picker — open, spin around, and lock in your own viewing angle -->
-<div class="modal-backdrop" id="npAngleBackdrop">
-  <div class="modal">
-    <h3>Record player angle</h3>
-    <div style="font-size:12px; color:var(--ink-dim); margin-bottom:6px;">Drag the record to spin it around and tilt it to your angle — the mini player picks up whatever you set here.</div>
-    <div id="npAngleStageWrap" style="padding:22px 0 12px;">
-      <div id="npAngleStage">
-        <div id="npAngleBody">
-          <div id="npAnglePlatterRing">
-            <div class="disc" id="npAngleDisc"><div class="disc-label" id="npAngleDiscLabel"></div></div>
-          </div>
-          <div id="npAngleTonearm"></div>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex; justify-content:center; margin-bottom:16px;">
-      <button class="icon-btn" id="npAnglePlayBtn" title="Play/pause" style="width:44px; height:44px; border-radius:50%; background:var(--coral); display:flex; align-items:center; justify-content:center;">
-        <svg id="npAnglePlayIcon" viewBox="0 0 24 24" fill="#161616" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
-      </button>
-    </div>
-    <div class="modal-btns">
-      <button class="cancel" id="npAngleReset" style="flex:1;">Reset to corner</button>
-      <button class="confirm" id="npAngleDone" style="flex:1;">Done</button>
-    </div>
-  </div>
-</div>
 
 <!-- What's New popup — shown once whenever the app version changes -->
 <div class="modal-backdrop" id="whatsNewBackdrop">
@@ -1719,125 +1608,17 @@
   $('seekStyleLine').addEventListener('click', () => setSeekStyle('line'));
   $('seekStyleWaveform').addEventListener('click', () => setSeekStyle('waveform'));
 
-  // ---------------- Record player angle: drag the mini player itself to spin/tilt it, ----------------
-  // long-press it to open the bigger play area, npAngleBtn is now just the lock toggle.
-  function resetNpAngleToDefault(){
-    document.documentElement.style.removeProperty('--np-tilt');
-    document.documentElement.style.removeProperty('--np-spin');
-    dbPut('meta', { key: 'npPlayerAngle', value: null });
-  }
-  function applyNpAngleVars(tiltX, spinZ){
-    document.documentElement.style.setProperty('--np-tilt', tiltX + 'deg');
-    document.documentElement.style.setProperty('--np-spin', spinZ + 'deg');
-  }
-  function saveCustomNpAngle(tiltX, spinZ){
-    applyNpAngleVars(tiltX, spinZ);
-    dbPut('meta', { key: 'npPlayerAngle', value: { tiltX, spinZ } });
-  }
-  let npAngleLocked = false;
-  function setNpAngleLocked(v){
-    npAngleLocked = v;
-    $('npAngleBtn').classList.toggle('locked', v);
-    $('npAngleBtn').title = v ? 'Unlock the angle' : "Lock the angle so it can't be dragged by accident";
-    dbPut('meta', { key: 'npAngleLocked', value: v });
-  }
-  $('npAngleBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    setNpAngleLocked(!npAngleLocked);
-    toast(npAngleLocked ? 'Angle locked' : 'Angle unlocked — drag the player to spin it');
-  });
+  // ---------------- Mini player: just a simple visual now-playing indicator ----------------
+  // The old lid/tonearm/drag-to-tilt "toy" interactions were removed — tapping the disc
+  // (see the npDisc click handler further down) expands the full player.
 
-  // Drag directly on the mini player is no longer allowed here in the main library view —
-  // that's now reserved for the play zone (the bigger angle-picker popup) so it can't get
-  // knocked around by accident while scrolling/browsing. A press that doesn't move, held
-  // past 550ms, still opens the play zone for a roomier canvas to actually drag in.
-  let miniDragState = null, miniDragMoved = false, miniLongPressTimer = null;
-  const MINI_DRAG_EXCLUDE = '#npLid, #npMiniTonearm, #npDisc, #npAngleBtn';
-  $('npPlayerBody').addEventListener('pointerdown', (e) => {
-    if(e.target.closest(MINI_DRAG_EXCLUDE)) return;
-    if(npAngleLocked) return;
-    miniDragState = { startX: e.clientX, startY: e.clientY };
-    miniDragMoved = false;
-    try{ $('npPlayerBody').setPointerCapture(e.pointerId); }catch(err){}
-    clearTimeout(miniLongPressTimer);
-    miniLongPressTimer = setTimeout(() => {
-      if(!miniDragMoved) openNpAnglePicker();
-    }, 550);
-  });
-  $('npPlayerBody').addEventListener('pointermove', (e) => {
-    if(!miniDragState) return;
-    const dx = e.clientX - miniDragState.startX;
-    const dy = e.clientY - miniDragState.startY;
-    if(Math.hypot(dx, dy) > 4){
-      miniDragMoved = true;
-      clearTimeout(miniLongPressTimer);
-    }
-    // No spin/tilt applied here anymore — dragging the mini player in the main
-    // menu no longer changes the angle. Open the play zone to actually adjust it.
-  });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev => {
-    $('npPlayerBody').addEventListener(ev, () => {
-      clearTimeout(miniLongPressTimer);
-      miniDragState = null;
-    });
-  });
-
-  let modalTiltX = 46, modalSpinZ = 26, angleDragState = null;
-  function renderAngleStage(){
-    $('npAngleBody').style.transform = `rotateX(${modalTiltX}deg) rotateZ(${modalSpinZ}deg)`;
+  function setLiquidGlass(on){
+    document.body.classList.toggle('liquid-glass-on', on);
+    $('liquidGlassToggle').textContent = on ? 'On' : 'Off';
+    $('liquidGlassToggle').classList.toggle('active', on);
+    dbPut('meta', { key: 'liquidGlass', value: on });
   }
-  $('npAngleStage').addEventListener('pointerdown', (e) => {
-    if(npAngleLocked){ toast('Locked — tap the lock icon on the mini player to unlock it first'); return; }
-    angleDragState = { startX: e.clientX, startY: e.clientY, tiltX: modalTiltX, spinZ: modalSpinZ };
-    $('npAngleStage').classList.add('dragging');
-    try{ $('npAngleStage').setPointerCapture(e.pointerId); }catch(err){}
-  });
-  $('npAngleStage').addEventListener('pointermove', (e) => {
-    if(!angleDragState) return;
-    const dx = e.clientX - angleDragState.startX;
-    const dy = e.clientY - angleDragState.startY;
-    modalSpinZ = Math.max(-180, Math.min(180, angleDragState.spinZ + dx * 0.7));
-    modalTiltX = Math.max(8, Math.min(85, angleDragState.tiltX - dy * 0.45));
-    renderAngleStage();
-  });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev => {
-    $('npAngleStage').addEventListener(ev, () => {
-      angleDragState = null;
-      $('npAngleStage').classList.remove('dragging');
-      if(!npAngleLocked) saveCustomNpAngle(modalTiltX, modalSpinZ);
-    });
-  });
-  $('npAnglePlayBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    $('playPauseBtn').click();
-  });
-  function openNpAnglePicker(){
-    const cs = getComputedStyle(document.documentElement);
-    modalTiltX = parseFloat(cs.getPropertyValue('--np-tilt')) || 46;
-    modalSpinZ = parseFloat(cs.getPropertyValue('--np-spin')) || 26;
-    renderAngleStage();
-    const t = queueIndex >= 0 ? allTracks.find(tr => tr.id === queue[queueIndex]) : null;
-    $('npAngleDiscLabel').style.backgroundImage = $('npDiscLabel').style.backgroundImage || '';
-    $('npAngleDisc').classList.toggle('spinning', !!(t && !activeAudio().paused));
-    $('npAnglePlayIcon').innerHTML = (t && !activeAudio().paused)
-      ? '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
-    $('npAngleBackdrop').style.display = 'flex';
-  }
-  // Long-press anywhere on the mini player (that isn't a drag, and isn't one of the
-  // other interactive parts) opens the bigger play area for a roomier canvas to spin in —
-  // handled inside the drag block above via miniLongPressTimer.
-  $('npAngleReset').addEventListener('click', () => {
-    if(npAngleLocked){ toast('Locked — unlock it first'); return; }
-    modalTiltX = 46; modalSpinZ = 26;
-    renderAngleStage();
-    saveCustomNpAngle(46, 26);
-  });
-  $('npAngleDone').addEventListener('click', () => {
-    saveCustomNpAngle(modalTiltX, modalSpinZ);
-    $('npAngleBackdrop').style.display = 'none';
-    toast('Angle saved');
-  });
-  $('npAngleBackdrop').addEventListener('click', e => { if(e.target === $('npAngleBackdrop')) $('npAngleBackdrop').style.display = 'none'; });
+  $('liquidGlassToggle').addEventListener('click', () => setLiquidGlass(!document.body.classList.contains('liquid-glass-on')));
 
   let autoVolumeEnabled = true;
   function setAutoVolume(on){
@@ -2037,13 +1818,16 @@
     const topGenres = Object.entries(genreCounts).sort((a,b) => b[1]-a[1]).slice(0, 5);
 
     let html = '';
+    html += `<div style="font-size:11px; color:var(--ink-dim); margin:-4px 0 2px;">Tap the + on a stat to add to it manually — handy if storage ever gets reset.</div>`;
     html += `
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px;">
+        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
+          <button class="stat-add-btn" data-stat="time" title="Add listening time">+</button>
           <div style="font-size:22px; font-weight:700; color:var(--coral);">${fmtDurationLong(totalListenSeconds)}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Total listening time</div>
         </div>
-        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px;">
+        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
+          <button class="stat-add-btn" data-stat="plays" title="Add songs played">+</button>
           <div style="font-size:22px; font-weight:700; color:var(--coral);">${totalPlays}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Songs played</div>
         </div>
@@ -2055,7 +1839,8 @@
           <div style="font-size:22px; font-weight:700;">${totalPlaylists}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Playlists</div>
         </div>
-        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px;">
+        <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
+          <button class="stat-add-btn" data-stat="streak" title="Add streak days">+</button>
           <div style="font-size:22px; font-weight:700; color:var(--coral);">🔥 ${currentStreak}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Day streak${currentStreak===1?'':'s'}</div>
         </div>
@@ -2100,6 +1885,50 @@
     html += `</div>`;
 
     body.innerHTML = html;
+    body.querySelectorAll('.stat-add-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        promptAddStat(btn.dataset.stat);
+      });
+    });
+  }
+  function promptAddStat(stat){
+    const cfg = {
+      time:   { label: 'minutes of listening time to add', unit: 'min' },
+      plays:  { label: 'songs played to add', unit: 'plays' },
+      streak: { label: 'streak days to add', unit: 'days' },
+    }[stat];
+    if(!cfg) return;
+    const raw = prompt(`How many ${cfg.label}?`, '');
+    if(raw === null) return;
+    const n = parseInt(raw, 10);
+    if(!Number.isFinite(n) || n <= 0){ toast('Enter a whole number greater than 0.'); return; }
+
+    if(stat === 'time'){
+      totalListenSeconds += n * 60;
+      dbPut('meta', { key: 'stats', value: { totalListenSeconds, totalPlays } });
+      toast(`Added ${n} minute${n===1?'':'s'} to listening time`);
+    } else if(stat === 'plays'){
+      totalPlays += n;
+      dbPut('meta', { key: 'stats', value: { totalListenSeconds, totalPlays } });
+      toast(`Added ${n} play${n===1?'':'s'} to songs played`);
+    } else if(stat === 'streak'){
+      // Back-fill the N most recent days (today backward) as "listened" so the
+      // streak counts them, then bump the best-streak record if this beats it.
+      const cursor = new Date();
+      for(let i = 0; i < n; i++){
+        listenedDates.add(dateKeyFor(cursor));
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      dbPut('meta', { key: 'listenedDates', value: Array.from(listenedDates) });
+      const streak = computeStreak();
+      if(streak > longestStreak){
+        longestStreak = streak;
+        dbPut('meta', { key: 'longestStreak', value: longestStreak });
+      }
+      toast(`Added ${n} day${n===1?'':'s'} to your streak`);
+    }
+    renderStats();
   }
   $('statsBtn').addEventListener('click', () => { renderStats(); $('statsBackdrop').style.display = 'flex'; });
   $('statsClose').addEventListener('click', () => { $('statsBackdrop').style.display = 'none'; });
@@ -2158,12 +1987,8 @@
       }
       const seekStyleRow = metaRows.find(r => r.key === 'seekStyle');
       setSeekStyle(seekStyleRow && seekStyleRow.value === 'waveform' ? 'waveform' : 'line');
-      const npAngleRow = metaRows.find(r => r.key === 'npPlayerAngle');
-      const npLockRow = metaRows.find(r => r.key === 'npAngleLocked');
-      setNpAngleLocked(!!(npLockRow && npLockRow.value));
-      if(npAngleRow && npAngleRow.value){
-        applyNpAngleVars(npAngleRow.value.tiltX, npAngleRow.value.spinZ);
-      }
+      const liquidGlassRow = metaRows.find(r => r.key === 'liquidGlass');
+      setLiquidGlass(!!(liquidGlassRow && liquidGlassRow.value));
       const autoVolRow = metaRows.find(r => r.key === 'autoVolume');
       setAutoVolume(autoVolRow ? !!autoVolRow.value : true);
       const gaplessRow = metaRows.find(r => r.key === 'gaplessMode');
@@ -2199,8 +2024,15 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '32.8';
+  const APP_VERSION = '32.9';
   const CHANGELOG = [
+    { version: '32.9', title: 'Manual stat adjusters, mini player simplified, liquid glass mode', items: [
+      'Added a + button on listening time, songs played, and day streak in Stats — lets you manually add to any of them by hand, useful if storage ever gets reset and you want to restore your numbers',
+      'Manually adding streak days back-fills those days so your current streak (and best streak, if beaten) reflect it correctly',
+      'Removed the mini record player\'s lid/tonearm/vinyl-lift toy interactions and the angle picker — it\'s now just a simple spinning disc, tap it to open the full player',
+      'Added a Liquid glass mode (Settings → Theme) — frosted, translucent panels for the now-playing bar and popups',
+      'Smoother easing on the now-playing bar and action pills',
+    ]},
     { version: '32.8', title: 'Manual duplicate review, storage persistence, play-zone-only dragging, deeper stats', items: [
       'Duplicate songs are now flagged with a notification (bell badge + entry) instead of a single "delete all extras" prompt — open it to see each duplicate group and manually pick which copies to delete',
       'The app now asks the browser to persist your library storage on load — this helps stop iOS/Android from silently evicting your songs and playlists to free up space, a likely cause of tracks disappearing on their own',
@@ -2399,12 +2231,11 @@
     });
   }
   $('resetAppearanceBtn').addEventListener('click', () => {
-    // In-app safety net: puts theme + record player angle/lock back to first-run defaults,
+    // In-app safety net: puts theme + liquid glass back to first-run defaults,
     // separate from the full code revert you'd get by keeping an older build around.
     delete THEMES.custom;
     applyTheme('rosegold');
-    setNpAngleLocked(false);
-    resetNpAngleToDefault();
+    setLiquidGlass(false);
     dbPut('meta', { key: 'customTheme', value: null });
     renderThemeOptions();
     toast('Appearance reset to defaults');
@@ -4025,9 +3856,7 @@
     if(e.target !== activeAudio()) return;
     $('npDisc').classList.add('spinning');
     $('npPlayerBody').classList.add('playing');
-    $('npAngleDisc').classList.add('spinning');
     $('playIcon').innerHTML = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
-    $('npAnglePlayIcon').innerHTML = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     if(THEMES[currentTheme] && THEMES[currentTheme].rgbPlus) startGlowSync();
     if($('djModeBackdrop').style.display === 'flex') refreshDjMode();
@@ -4036,9 +3865,7 @@
     if(e.target !== activeAudio()) return;
     $('npDisc').classList.remove('spinning');
     $('npPlayerBody').classList.remove('playing');
-    $('npAngleDisc').classList.remove('spinning');
     $('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
-    $('npAnglePlayIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
     if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     stopGlowSync();
     savePlaybackState(true);
@@ -4305,27 +4132,9 @@
   document.addEventListener('click', (e) => {
     if(!e.target.closest('#npInfo')) $('nameBubble').style.display = 'none';
   });
-  // ---------------- Play with the record player: open the lid, take off the tonearm, lift the vinyl ----------------
-  $('npLid').addEventListener('click', (e) => {
-    e.stopPropagation();
-    $('npPlayerBody').classList.toggle('lid-open');
-  });
-  $('npMiniTonearm').addEventListener('click', (e) => {
-    e.stopPropagation();
-    $('npPlayerBody').classList.toggle('arm-off');
-  });
-  let discPressTimer = null, discLongPressed = false;
-  $('npDisc').addEventListener('pointerdown', () => {
-    discLongPressed = false;
-    discPressTimer = setTimeout(() => {
-      discLongPressed = true;
-      $('npPlayerBody').classList.toggle('vinyl-off');
-    }, 550);
-  });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev => $('npDisc').addEventListener(ev, () => clearTimeout(discPressTimer)));
+  // ---------------- Mini player: tap the disc to expand the full now-playing view ----------------
   $('npDisc').addEventListener('click', () => {
     if(queueIndex < 0 || queueIndex >= queue.length) return;
-    if(discLongPressed){ discLongPressed = false; return; } // long-press already toggled the vinyl — don't also expand
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(!t) return;
     const discEl = $('npDisc');
