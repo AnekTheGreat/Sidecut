@@ -502,19 +502,25 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-  #npPlayerStage{ flex-shrink:0; position:relative; width:60px; height:50px; perspective:200px; cursor:grab; touch-action:none; }
+  #npPlayerStage{ flex-shrink:0; position:relative; width:60px; height:50px; perspective:220px; cursor:grab; touch-action:none; }
   #npPlayerStage.dragging{ cursor:grabbing; }
+  #npPlayerStage.dragging .np-tt-3d{ filter: brightness(1.08); }
   .np-tt-3d{
     position:absolute; inset:0; transform-style:preserve-3d;
-    transform: rotateX(var(--np-rx, 52deg)) rotateY(var(--np-ry, -34deg)) rotateZ(var(--np-rz, 0deg));
+    transform: rotateX(var(--np-rx, 48deg)) rotateY(var(--np-ry, -30deg)) rotateZ(var(--np-rz, 0deg));
+    transition: filter 0.2s ease;
   }
-  .np-tt-3d.np-anim{ transition: transform 0.4s ease; }
+  .np-tt-3d.np-anim{ transition: transform 0.4s ease, filter 0.2s ease; }
   /* Plinth: the player's actual body/base sitting under the platter */
   .np-plinth{
-    position:absolute; left:0; right:0; bottom:0; height:13px; transform: translateZ(-5px);
-    background: linear-gradient(180deg, #3a352c, #1d1a15 55%, #100e0c);
+    position:absolute; left:0; right:0; bottom:0; height:14px; transform: translateZ(-5px);
+    background: linear-gradient(180deg, #46402fdd, #211d16 45%, #0d0b09);
     border-radius:5px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 3px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.55), inset 0 1.5px 0 rgba(255,255,255,0.14), inset 0 -2px 3px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .np-plinth::after{ /* thin brushed-metal trim along the front edge */
+    content:''; position:absolute; left:2px; right:2px; bottom:2px; height:1.5px; border-radius:2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 40%, rgba(255,255,255,0.35) 60%, transparent);
   }
   #npPlayerBody{
     position:absolute; right:0; bottom:1px; width:46px; height:46px; flex-shrink:0; transform: translateZ(1px);
@@ -523,30 +529,35 @@
   /* Lid: propped open behind the platter while idle, swings shut flat over the record while playing */
   .np-lid{
     position:absolute; left:0px; bottom:10px; width:24px; height:32px;
-    background: linear-gradient(155deg, rgba(215,228,238,0.30), rgba(150,165,180,0.10) 55%, rgba(110,120,135,0.16));
-    border:1px solid rgba(255,255,255,0.30);
+    background: linear-gradient(155deg, rgba(222,234,244,0.34), rgba(160,175,195,0.12) 55%, rgba(115,125,140,0.20));
+    border:1px solid rgba(255,255,255,0.34);
     border-radius:2px 9px 2px 2px;
     transform-origin: bottom center;
     transform: rotateX(-104deg) translateZ(2px);
     transition: transform 0.55s cubic-bezier(.34,1.05,.6,1);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 3px 8px rgba(0,0,0,0.3);
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.45), inset 0 0 12px rgba(255,255,255,0.06), 0 4px 10px rgba(0,0,0,0.35);
     pointer-events:none;
   }
   #npPlayerBody.playing ~ .np-lid{ transform: rotateX(0deg) translateZ(7px); }
   .np-lid::after{
     content:''; position:absolute; top:6%; left:14%; width:20%; height:64%;
-    background: linear-gradient(160deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 75%);
+    background: linear-gradient(160deg, rgba(255,255,255,0.65), rgba(255,255,255,0) 75%);
     border-radius:2px; transform:rotate(6deg);
+  }
+  .np-lid::before{ /* second, fainter sheen streak for extra glassiness */
+    content:''; position:absolute; top:10%; right:10%; width:12%; height:45%;
+    background: linear-gradient(160deg, rgba(255,255,255,0.3), rgba(255,255,255,0) 80%);
+    border-radius:2px;
   }
   .np-tonearm-base{
     position:absolute; top:0; right:0; width:11px; height:11px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #565656, #212121);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+    background: radial-gradient(circle at 35% 30%, #6b6b6b, #212121);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.12);
     z-index:3;
   }
   .np-tonearm-counterweight{
     position:absolute; top:2.5px; right:-3px; width:6px; height:6px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #6a6a6a, #2a2a2a);
+    background: radial-gradient(circle at 35% 30%, #7a7a7a, #2a2a2a);
     box-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
   /* The "hand": tonearm swings from parked (off the record) to resting on the grooves while playing */
@@ -559,17 +570,22 @@
   #npPlayerBody.playing .np-tonearm{ transform: rotate(10deg); }
   .np-tonearm-shaft{
     position:absolute; inset:0; border-radius:2px;
-    background: linear-gradient(90deg, #d9cba8, #a68a5f);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+    background: linear-gradient(90deg, #e8dab8, #b0946a);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
   }
   .np-tonearm-head{
     position:absolute; left:-20%; top:-2.5px; width:8px; height:7px; border-radius:1.5px 1px 1px 1.5px;
-    background: linear-gradient(100deg, #1a1a1a, #060606);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 1px 2px rgba(0,0,0,0.5);
+    background: linear-gradient(100deg, #232323, #060606);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.5);
   }
   .np-tonearm-needle{
-    position:absolute; left:-2px; bottom:-2px; width:2px; height:3px; background:#d8d8d8;
-    box-shadow: 0 0 2px rgba(255,255,255,0.5);
+    position:absolute; left:-2px; bottom:-2px; width:2px; height:3px; background:#e8e8e8;
+    box-shadow: 0 0 3px rgba(255,255,255,0.6);
+  }
+  .np-platter-mat{
+    position:absolute; width:50px; height:50px; border-radius:50%; transform: translateZ(-1px);
+    background: radial-gradient(circle, #17110c 0%, #0c0908 78%, #050403 100%);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
   }
   #nowPlaying .disc{
     width:46px; height:46px; border-width:1.5px; position:relative;
@@ -636,14 +652,27 @@
     border-top-color: rgba(255,255,255,0.16);
     animation: glassBreathe 6s ease-in-out infinite;
   }
+  body.liquid-glass-on .icon-btn{
+    background: color-mix(in srgb, var(--bg-raised) 45%, transparent);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    backdrop-filter: blur(10px) saturate(150%);
+    border-color: rgba(255,255,255,0.14);
+  }
+  body.liquid-glass-on .track .remove{
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius:6px;
+  }
   /* Drifting specular sheen — a soft diagonal highlight that slides across the glass,
      kept only on non-scrolling surfaces so it never clips popovers or scrollable content. */
-  body.liquid-glass-on .action-pill.primary::before{
+  body.liquid-glass-on .action-pill.primary::before,
+  body.liquid-glass-on .icon-btn::before{
     content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
     background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.22) 34%, rgba(255,255,255,0.03) 46%, transparent 60%);
     background-size:240% 240%; background-position: 120% 50%;
     animation: glassSheen 7s ease-in-out infinite; mix-blend-mode:screen;
   }
+  body.liquid-glass-on .icon-btn{ position:relative; overflow:hidden; }
   @keyframes glassSheen{
     0%{ background-position: 130% 50%; }
     50%{ background-position: -30% 50%; }
@@ -653,6 +682,7 @@
     0%, 100%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 32px rgba(255,255,255,0.03), 0 20px 44px rgba(0,0,0,0.4); }
     50%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 32px rgba(255,255,255,0.06), 0 20px 44px rgba(0,0,0,0.4); }
   }
+
 
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
   #npInfo .t{ font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -745,7 +775,7 @@
 </style>
 </head>
 <body>
-<div id="rgbEdgeGlow" style="position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.16;box-shadow:inset 0 0 30px 6px var(--coral),inset 0 0 30px 6px var(--gold);-webkit-mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);mask:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 60%,#000 100%);"></div>
+<div id="rgbEdgeGlow" style="position:fixed;inset:0;height:100dvh;pointer-events:none;z-index:9999;opacity:.12;box-shadow:inset 0 0 40px 2px var(--coral),inset 0 0 70px 10px var(--gold);"></div>
 
 
 <header>
@@ -846,6 +876,7 @@
     <div class="np-tt-3d" id="npTt3d">
     <div class="np-plinth"></div>
     <div id="npPlayerBody">
+      <div class="np-platter-mat"></div>
       <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
       <div class="np-tonearm-base"><div class="np-tonearm-counterweight"></div></div>
       <div class="np-tonearm"><div class="np-tonearm-shaft"></div><div class="np-tonearm-head"><div class="np-tonearm-needle"></div></div></div>
@@ -1620,7 +1651,7 @@
       // Fast attack, slow release — snaps up on the hit, eases back down, never twitchy.
       lineLevel = raw > lineLevel ? lineLevel + (raw - lineLevel) * 0.6 : lineLevel + (raw - lineLevel) * 0.08;
       const edgeGlow = $('rgbEdgeGlow');
-      if(edgeGlow) edgeGlow.style.opacity = (0.16 + lineLevel * 0.7).toFixed(2);
+      if(edgeGlow) edgeGlow.style.opacity = (0.12 + lineLevel * 0.7).toFixed(2);
       if(lineLevel < 0.03){
         svg.classList.remove('live');
         path.setAttribute('d', 'M0,11 L100,11');
@@ -2305,8 +2336,13 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '33.4';
+  const APP_VERSION = '33.5';
   const CHANGELOG = [
+    { version: '33.5', title: 'Nicer turntable materials, calmer edge glow, more glass', items: [
+      'The turntable now has a proper platter mat under the record, a brushed-metal trim on the plinth, and a glossier two-tone lid — nicer angles at rest too',
+      'Fixed the RGB-theme edge glow rendering as an ugly solid bar on some mobile browsers (the CSS mask trick was unreliable there) — it\'s now a plain, safe vignette',
+      'Liquid Glass now also covers icon buttons throughout the app, with the same drifting sheen as the primary button',
+    ]},
     { version: '33.4', title: 'Small UI polish pass', items: [
       'Track row press feedback is a touch more visible',
       'Play/pause button now has a springy press-scale instead of a flat one',
