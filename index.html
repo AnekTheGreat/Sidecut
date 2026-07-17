@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head> 
@@ -174,8 +175,8 @@
     transition: transform 0.6s cubic-bezier(0.34, 1.1, 0.6, 1);
     z-index:8;
   }
-  .deck-disc.spinning ~ .tonearm,
-  .platter.playing .tonearm{ transform: rotate(9deg); }
+  /* Tonearm no longer swings onto the record on play — it's a fixed decorative part of the
+     turntable now, not a moving one. */
   .tonearm-shaft{
     position:absolute; top:0; left:0; width:100%; height:100%; border-radius:3px;
     background: linear-gradient(90deg, #cfc0a0, #9c8560);
@@ -196,6 +197,7 @@
   /* jog wheel touch ring the finger actually grabs (bigger hit target than the visual disc) */
   .jog-hint{
     position:absolute; inset:0; border-radius:50%; z-index:9;
+    pointer-events:none; /* decorative only now — no longer intercepts the flick/scratch gesture */
   }
 
   .deck-controls{
@@ -522,17 +524,34 @@
     background: color-mix(in srgb, var(--bg-raised) 68%, transparent);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 20px 44px rgba(0,0,0,0.35);
+    animation: glassBreathe 6s ease-in-out infinite;
   }
-  body.liquid-glass-on .action-pill{
+  /* :not(.primary) fix — previously EVERY .action-pill (including the solid-accent "primary"
+     play/confirm pills) got flattened to the same translucent gray, so buttons that are
+     supposed to pop in solid color looked washed out and broken with glass mode on. */
+  body.liquid-glass-on .action-pill:not(.primary){
     background: color-mix(in srgb, var(--bg-raised) 55%, transparent);
     -webkit-backdrop-filter: blur(14px) saturate(150%);
     backdrop-filter: blur(14px) saturate(150%);
+    border-color: rgba(255,255,255,0.14);
+  }
+  body.liquid-glass-on .action-pill.primary{
+    background: color-mix(in srgb, var(--coral) 80%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
   }
   body.liquid-glass-on #nowPlaying{
     background: color-mix(in srgb, var(--bg-raised) 62%, transparent);
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     backdrop-filter: blur(22px) saturate(160%);
+    border-top-color: rgba(255,255,255,0.12);
+  }
+  @keyframes glassBreathe{
+    0%, 100%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 20px 44px rgba(0,0,0,0.35); }
+    50%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.24), 0 20px 44px rgba(0,0,0,0.35); }
   }
 
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
@@ -610,6 +629,12 @@
     padding:0; transition:background .15s, color .15s;
   }
   .stat-add-btn:active{ background:var(--coral); color:#161616; }
+  .stat-pop{ animation: statPop 0.5s cubic-bezier(0.34,1.56,0.64,1); display:inline-block; }
+  @keyframes statPop{
+    0%{ transform:scale(1); }
+    35%{ transform:scale(1.28); text-shadow:0 0 14px color-mix(in srgb, var(--coral) 70%, transparent); }
+    100%{ transform:scale(1); text-shadow:none; }
+  }
   .playlist-pick-btn{
     width:100%; text-align:left; padding:12px 14px; border-radius:10px;
     background:var(--bg); border:1px solid var(--line); color:var(--ink);
@@ -797,6 +822,12 @@
         <input type="range" id="rgbSpeedSlider" min="2" max="20" step="1" value="8" style="width:100%;">
       </div>
 
+      <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:var(--ink-dim);">Liquid glass mode</span>
+        <button class="tab" id="liquidGlassToggle" style="padding:5px 12px; font-size:12px;">Off</button>
+      </div>
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:4px;">Frosted, translucent panels for the now-playing bar and popups — layers on top of whichever theme you pick above. Or just tap the Liquid Glass theme below for the full iOS-style look in one go.</div>
+
       <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px;">
         <h3 style="font-size:15px; margin-bottom:10px;">Or build your own</h3>
         <div id="customPreview" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; margin-bottom:12px; border:1px solid var(--line);">
@@ -861,12 +892,6 @@
           <button class="tab" id="seekStyleWaveform" style="padding:5px 12px; font-size:12px;">Waveform</button>
         </div>
       </div>
-
-      <div style="margin-top:18px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:13px; color:var(--ink-dim);">Liquid glass mode</span>
-        <button class="tab" id="liquidGlassToggle" style="padding:5px 12px; font-size:12px;">Off</button>
-      </div>
-      <div style="font-size:11px; color:var(--ink-dim); margin-top:4px;">Frosted, translucent panels for the now-playing bar and popups, with a soft blur behind them.</div>
 
       <div style="margin-top:18px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:13px; color:var(--ink-dim);">Auto-adjust volume</span>
@@ -983,6 +1008,18 @@
     <div id="statsBody" style="display:flex; flex-direction:column; gap:16px;"></div>
     <div class="modal-btns">
       <button class="cancel" id="statsClose" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add-to-stat input (replaces native prompt() so it works reliably in the sideloaded APK) -->
+<div class="modal-backdrop" id="statInputBackdrop">
+  <div class="modal" style="gap:14px;">
+    <h3 id="statInputTitle">Add to stat</h3>
+    <input type="number" id="statInputField" inputmode="numeric" min="1" step="1" placeholder="0" style="width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:12px 14px; font-size:20px; font-family:'JetBrains Mono',monospace; text-align:center;">
+    <div class="modal-btns">
+      <button class="cancel" id="statInputCancel">Cancel</button>
+      <button class="confirm" id="statInputConfirm">Add</button>
     </div>
   </div>
 </div>
@@ -1311,6 +1348,7 @@
     midnight: { name: 'Midnight',        bg:'#080B18', bgRaised:'#101425', coral:'#6C7BFF', gold:'#9FA8DA' },
     rgb:      { name: 'RGB (animated)',  bg:'#0a0a0f', bgRaised:'#14141c', coral:'#ff2ea8', gold:'#2ea8ff', rgb:true },
     rgbplus:  { name: 'RGB + (glow sync)', bg:'#08080d', bgRaised:'#121219', coral:'#ff2ea8', gold:'#2ea8ff', rgb:true, rgbPlus:true },
+    liquidglass: { name: 'Liquid Glass', bg:'#0C0F14', bgRaised:'#171B22', coral:'#0A84FF', gold:'#64D2FF', liquidGlass:true },
   };
 
   // ---------------- RGB theme: continuously cycles --coral/--gold hue via requestAnimationFrame,
@@ -1429,6 +1467,7 @@
     } else {
       stopGlowSync();
     }
+    if(th.liquidGlass) setLiquidGlass(true); // one-tap iOS-style glass look
     dbPut('meta', { key: 'theme', value: key });
   }
 
@@ -1444,12 +1483,14 @@
       btn.style.gap = '10px';
       const swatch = th.rgb
         ? 'background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);'
-        : `background:${th.coral};`;
-      btn.innerHTML = `<span style="width:18px; height:18px; border-radius:50%; ${swatch} display:inline-block; flex-shrink:0; border:1px solid rgba(255,255,255,0.2);"></span>${key === currentTheme ? '✓ ' : ''}${th.name}`;
+        : th.liquidGlass
+          ? `background: linear-gradient(135deg, ${th.coral}, ${th.gold}); backdrop-filter: blur(2px);`
+          : `background:${th.coral};`;
+      btn.innerHTML = `<span style="width:18px; height:18px; border-radius:50%; ${swatch} display:inline-block; flex-shrink:0; border:1px solid rgba(255,255,255,${th.liquidGlass ? 0.45 : 0.2});"></span>${key === currentTheme ? '✓ ' : ''}${th.name}`;
       btn.addEventListener('click', () => {
         applyTheme(key);
         renderThemeOptions();
-        toast(`Theme: ${th.name}`);
+        toast(th.liquidGlass ? `Theme: ${th.name} ✨ glass mode on` : `Theme: ${th.name}`);
       });
       container.appendChild(btn);
     });
@@ -1823,12 +1864,12 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
           <button class="stat-add-btn" data-stat="time" title="Add listening time">+</button>
-          <div style="font-size:22px; font-weight:700; color:var(--coral);">${fmtDurationLong(totalListenSeconds)}</div>
+          <div id="statTimeValue" style="font-size:22px; font-weight:700; color:var(--coral);">${fmtDurationLong(totalListenSeconds)}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Total listening time</div>
         </div>
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
           <button class="stat-add-btn" data-stat="plays" title="Add songs played">+</button>
-          <div style="font-size:22px; font-weight:700; color:var(--coral);">${totalPlays}</div>
+          <div id="statPlaysValue" style="font-size:22px; font-weight:700; color:var(--coral);">${totalPlays}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Songs played</div>
         </div>
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px;">
@@ -1841,11 +1882,11 @@
         </div>
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; position:relative;">
           <button class="stat-add-btn" data-stat="streak" title="Add streak days">+</button>
-          <div style="font-size:22px; font-weight:700; color:var(--coral);">🔥 ${currentStreak}</div>
+          <div id="statStreakValue" style="font-size:22px; font-weight:700; color:var(--coral);">🔥 ${currentStreak}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Day streak${currentStreak===1?'':'s'}</div>
         </div>
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px;">
-          <div style="font-size:22px; font-weight:700;">${Math.max(longestStreak, currentStreak)}</div>
+          <div id="statBestStreakValue" style="font-size:22px; font-weight:700;">${Math.max(longestStreak, currentStreak)}</div>
           <div style="font-size:11.5px; color:var(--ink-dim); margin-top:2px;">Best streak (days)</div>
         </div>
         <div style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; grid-column: span 2;">
@@ -1892,14 +1933,55 @@
       });
     });
   }
-  function promptAddStat(stat){
-    const cfg = {
-      time:   { label: 'minutes of listening time to add', unit: 'min' },
-      plays:  { label: 'songs played to add', unit: 'plays' },
-      streak: { label: 'streak days to add', unit: 'days' },
-    }[stat];
+  const STAT_ADD_CFG = {
+    time:   { title: 'Add listening time', label: 'Minutes to add', tileId: 'statTimeValue' },
+    plays:  { title: 'Add songs played', label: 'Plays to add', tileId: 'statPlaysValue' },
+    streak: { title: 'Add streak days', label: 'Days to add', tileId: 'statStreakValue' },
+  };
+  // Native prompt() is unreliable inside the sideloaded APK's WebView (it can silently
+  // no-op instead of showing a dialog), which made adding stats — streak days especially —
+  // look like it "didn't add" anything. This in-app modal replaces it so it always works,
+  // and resolves the same way prompt() used to (a number, or null if cancelled).
+  function askForStatAmount(cfg){
+    return new Promise((resolve) => {
+      $('statInputTitle').textContent = cfg.title;
+      const field = $('statInputField');
+      field.placeholder = cfg.label;
+      field.value = '';
+      $('statInputBackdrop').style.display = 'flex';
+      setTimeout(() => field.focus(), 50);
+
+      function cleanup(result){
+        $('statInputBackdrop').style.display = 'none';
+        $('statInputConfirm').removeEventListener('click', onConfirm);
+        $('statInputCancel').removeEventListener('click', onCancel);
+        $('statInputBackdrop').removeEventListener('click', onBackdrop);
+        field.removeEventListener('keydown', onKeydown);
+        resolve(result);
+      }
+      function onConfirm(){ cleanup(field.value); }
+      function onCancel(){ cleanup(null); }
+      function onBackdrop(e){ if(e.target === $('statInputBackdrop')) cleanup(null); }
+      function onKeydown(e){ if(e.key === 'Enter') cleanup(field.value); else if(e.key === 'Escape') cleanup(null); }
+
+      $('statInputConfirm').addEventListener('click', onConfirm);
+      $('statInputCancel').addEventListener('click', onCancel);
+      $('statInputBackdrop').addEventListener('click', onBackdrop);
+      field.addEventListener('keydown', onKeydown);
+    });
+  }
+  // Briefly pops + flashes a stat tile so it's obvious at a glance that the number changed.
+  function popStatTile(id){
+    const el = $(id);
+    if(!el) return;
+    el.classList.remove('stat-pop');
+    void el.offsetWidth; // force reflow so the animation restarts if it's already mid-way
+    el.classList.add('stat-pop');
+  }
+  async function promptAddStat(stat){
+    const cfg = STAT_ADD_CFG[stat];
     if(!cfg) return;
-    const raw = prompt(`How many ${cfg.label}?`, '');
+    const raw = await askForStatAmount(cfg);
     if(raw === null) return;
     const n = parseInt(raw, 10);
     if(!Number.isFinite(n) || n <= 0){ toast('Enter a whole number greater than 0.'); return; }
@@ -1926,9 +2008,10 @@
         longestStreak = streak;
         dbPut('meta', { key: 'longestStreak', value: longestStreak });
       }
-      toast(`Added ${n} day${n===1?'':'s'} to your streak`);
+      toast(`Added ${n} day${n===1?'':'s'} to your streak — now at 🔥 ${streak}`);
     }
     renderStats();
+    popStatTile(cfg.tileId);
   }
   $('statsBtn').addEventListener('click', () => { renderStats(); $('statsBackdrop').style.display = 'flex'; });
   $('statsClose').addEventListener('click', () => { $('statsBackdrop').style.display = 'none'; });
@@ -2024,8 +2107,18 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '32.9';
+  const APP_VERSION = '33';
   const CHANGELOG = [
+    { version: '33', title: 'Liquid Glass fixes + theme, DJ turntable cleanup, reliable stat adding', items: [
+      'Liquid glass mode moved into Settings → Theme (it used to live under Playback)',
+      'Fixed liquid glass washing out solid-color buttons like Play — it now only frosts neutral surfaces and gives the primary pill a tinted glass look instead of losing its color',
+      'Liquid glass panels now have a proper glass edge (highlight border + soft inner shine) and a subtle animated breathing shine',
+      'Added a new "Liquid Glass" theme — an iOS-style look that turns liquid glass mode on for you in one tap',
+      'Adding to a stat (time / plays / streak) now uses an in-app dialog instead of the browser\'s prompt(), which could silently fail to appear in the APK and made streak days look like they weren\'t adding',
+      'Stat tiles now pop with a little animation when you add to them, so it\'s obvious the number actually changed',
+      'DJ Mode: the tonearm no longer auto-swings onto the record on play — it stays put as a fixed part of the turntable',
+      'DJ Mode: removed the flick-up scratch gesture on the jog overlay sitting on top of the record — scratching by dragging the record itself still works exactly the same',
+    ]},
     { version: '32.9', title: 'Manual stat adjusters, mini player simplified, liquid glass mode', items: [
       'Added a + button on listening time, songs played, and day streak in Stats — lets you manually add to any of them by hand, useful if storage ever gets reset and you want to restore your numbers',
       'Manually adding streak days back-fills those days so your current streak (and best streak, if beaten) reflect it correctly',
@@ -4614,7 +4707,8 @@
     el.addEventListener('pointercancel', release);
     el.addEventListener('lostpointercapture', () => { if(isScratching) endScratch(); });
   }
-  attachScratch($('djJog'), [$('djDisc')]);
+  // The jog-hint overlay's flick-up-top scratch gesture was removed — scratching by
+  // dragging the record itself (below) is the only way to scratch now.
   attachScratch($('djDisc'), []);
 
   // ---------------- DJ Mode: turntable rig wiring ----------------
