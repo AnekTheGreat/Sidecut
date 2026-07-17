@@ -1587,12 +1587,22 @@
     };
     // Long-press the mini player to open the Turntable settings popup instead of dragging it directly.
     // Bound directly on the stage element only (not delegated), so nothing outside its 60x50px box can trigger it.
-    let pressTimer = null, longPressed = false;
+    let pressTimer = null, longPressed = false, startX = 0, startY = 0;
     stage.addEventListener('pointerdown', (e) => {
       if(e.target !== stage && !stage.contains(e.target)) return;
       longPressed = false;
-      stage.setPointerCapture(e.pointerId);
+      startX = e.clientX; startY = e.clientY;
+      // No pointer capture here on purpose — nothing in this handler reads pointermove,
+      // so capturing bought us nothing, and it was never explicitly released. If a press
+      // ever got interrupted (app backgrounded mid-hold, a call/notification, the browser's
+      // own gesture arbitration) before a pointerup/pointercancel fired, that pointerId could
+      // stay captured by this element for the rest of the session — silently redirecting
+      // every future tap anywhere in the app to this 60x50px box instead of whatever was
+      // actually tapped. That's the app-wide "buttons stop working" bug.
       pressTimer = setTimeout(() => { longPressed = true; window.openTurntablePopup && window.openTurntablePopup(); }, 420);
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if(Math.abs(e.clientX-startX) > 8 || Math.abs(e.clientY-startY) > 8) clearTimeout(pressTimer);
     });
     const cancelPress = () => { clearTimeout(pressTimer); };
     stage.addEventListener('pointerup', cancelPress);
@@ -3404,12 +3414,14 @@
   // ---------------- Playlist tab reordering: long-press a tab (not All Songs/Favorites, which stay pinned first)
   // then drag left/right to reorder. Order is persisted by rebuilding the playlists object in the new key order. ----------------
   function wireTabReorder(el, name){
-    let pressTimer = null, dragging = false, startX = 0;
+    let pressTimer = null, dragging = false, startX = 0, startY = 0, moved = false;
     const tabsEl = $('tabs');
     el.addEventListener('pointerdown', (e) => {
       if(e.target !== el) return;
-      startX = e.clientX;
+      startX = e.clientX; startY = e.clientY;
+      moved = false;
       pressTimer = setTimeout(() => {
+        if(moved) return;
         dragging = true;
         el.setPointerCapture(e.pointerId);
         el.style.opacity = '0.55';
@@ -3417,24 +3429,33 @@
       }, 380);
     });
     el.addEventListener('pointermove', (e) => {
-      if(!dragging) return;
-      const dx = e.clientX - startX;
-      el.style.transform = `translateX(${dx}px) scale(1.05)`;
-      // Find which sibling tab we're currently hovering over and swap positions live
-      const siblings = [...tabsEl.querySelectorAll('.tab[data-playlist-name]')].filter(s => s !== el);
-      const elRect = el.getBoundingClientRect();
-      const midX = elRect.left + elRect.width / 2 + dx;
-      for(const sib of siblings){
-        const r = sib.getBoundingClientRect();
-        if(midX > r.left && midX < r.right){
-          const sibName = sib.dataset.playlistName;
-          if(sibName === 'All Songs' || sibName === 'Favorites') continue; // pinned, never displaced
-          if(midX < r.left + r.width / 2) tabsEl.insertBefore(el, sib);
-          else tabsEl.insertBefore(el, sib.nextSibling);
-          startX = e.clientX;
-          el.style.transform = '';
-          break;
+      if(dragging){
+        const dx = e.clientX - startX;
+        el.style.transform = `translateX(${dx}px) scale(1.05)`;
+        // Find which sibling tab we're currently hovering over and swap positions live
+        const siblings = [...tabsEl.querySelectorAll('.tab[data-playlist-name]')].filter(s => s !== el);
+        const elRect = el.getBoundingClientRect();
+        const midX = elRect.left + elRect.width / 2 + dx;
+        for(const sib of siblings){
+          const r = sib.getBoundingClientRect();
+          if(midX > r.left && midX < r.right){
+            const sibName = sib.dataset.playlistName;
+            if(sibName === 'All Songs' || sibName === 'Favorites') continue; // pinned, never displaced
+            if(midX < r.left + r.width / 2) tabsEl.insertBefore(el, sib);
+            else tabsEl.insertBefore(el, sib.nextSibling);
+            startX = e.clientX;
+            el.style.transform = '';
+            break;
+          }
         }
+        return;
+      }
+      // Not dragging yet — if the finger has moved more than a small jitter
+      // threshold, this is a scroll/swipe, not a hold. Cancel the pending
+      // reorder timer so scrolling the tab bar doesn't get hijacked mid-swipe.
+      if(Math.abs(e.clientX-startX) > 8 || Math.abs(e.clientY-startY) > 8){
+        moved = true;
+        clearTimeout(pressTimer);
       }
     });
     function endDrag(){
@@ -3906,9 +3927,10 @@
       }
       function onUp(ev){
         row.classList.remove('dragging');
-        handle.releasePointerCapture(ev.pointerId);
+        try{ handle.releasePointerCapture(ev.pointerId); }catch(err){}
         handle.removeEventListener('pointermove', onMove);
         handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onCancel);
 
         // Snap the dragged row to its final resting spot, then commit the real
         // DOM order and clear all inline transforms in one paint.
@@ -3927,8 +3949,24 @@
           renderList();
         }, 150);
       }
+      function onCancel(ev){
+        // Interrupted mid-drag (backgrounded app, OS gesture taking over, etc.) —
+        // bail out cleanly instead of leaving the row stuck at high z-index with
+        // a dangling transform sitting on top of (and blocking clicks on) other rows.
+        row.classList.remove('dragging');
+        row.style.zIndex = '';
+        row.style.transition = '';
+        row.style.transform = '';
+        siblings.forEach(s => { s.style.transition = ''; s.style.transform = ''; });
+        try{ handle.releasePointerCapture(ev.pointerId); }catch(err){}
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onCancel);
+        renderList();
+      }
       handle.addEventListener('pointermove', onMove);
       handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onCancel);
     });
   }
 
@@ -4655,8 +4693,10 @@
     const container = $('waveformBar');
     container.setPointerCapture(e.pointerId);
     const onMove = (ev) => seekFromWaveformEvent(ev);
+    const cleanup = () => container.removeEventListener('pointermove', onMove);
     container.addEventListener('pointermove', onMove);
-    container.addEventListener('pointerup', () => container.removeEventListener('pointermove', onMove), { once: true });
+    container.addEventListener('pointerup', cleanup, { once: true });
+    container.addEventListener('pointercancel', cleanup, { once: true });
   });
   $('seekBar').addEventListener('input', () => {
     const a = activeAudio();
@@ -5996,6 +6036,9 @@
       if(e.buttons !== 1 && e.pressure === 0) return;
       handleFaderPointer(e);
     });
+    const release = (e) => { try{ trackEl.releasePointerCapture(e.pointerId); }catch(err){} };
+    trackEl.addEventListener('pointerup', release);
+    trackEl.addEventListener('pointercancel', release);
     function handleFaderPointer(e){
       const rect = trackEl.getBoundingClientRect();
       const usable = rect.height - 20;
@@ -6062,12 +6105,14 @@
       }
       function onUp(ev){
         knobEl.classList.remove('grabbing');
-        knobEl.releasePointerCapture(ev.pointerId);
+        try{ knobEl.releasePointerCapture(ev.pointerId); }catch(err){}
         knobEl.removeEventListener('pointermove', onMove);
         knobEl.removeEventListener('pointerup', onUp);
+        knobEl.removeEventListener('pointercancel', onUp);
       }
       knobEl.addEventListener('pointermove', onMove);
       knobEl.addEventListener('pointerup', onUp);
+      knobEl.addEventListener('pointercancel', onUp);
     });
     // Double-tap/double-click to reset to a sensible default (0 for gain, off for filter)
     knobEl.addEventListener('dblclick', () => { value = initial; render(); });
@@ -6677,6 +6722,10 @@ const __origSP=Element.prototype.setPointerCapture;
 const __origRP=Element.prototype.releasePointerCapture;
 Element.prototype.setPointerCapture=function(id){try{return __origSP.call(this,id);}catch(e){}};
 Element.prototype.releasePointerCapture=function(id){try{return __origRP.call(this,id);}catch(e){}};
-window.addEventListener('pointerup',e=>{document.querySelectorAll('*').forEach(el=>{try{if(el.hasPointerCapture&&el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);}catch(_){}})},true);
+function __releaseAllPointerCaptures(e){
+  document.querySelectorAll('*').forEach(el=>{try{if(el.hasPointerCapture&&el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);}catch(_){}});
+}
+window.addEventListener('pointerup', __releaseAllPointerCaptures, true);
+window.addEventListener('pointercancel', __releaseAllPointerCaptures, true);
 </script></body>
 </html>
