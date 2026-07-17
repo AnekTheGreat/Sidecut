@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SideCut — your files, your player</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E1B1F">
-<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#0E1B1F" id="themeColorMeta">
+<link rel="icon" href="icon-192.png" id="faviconLink">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -503,39 +503,67 @@
   #actionSpeedSlider{ -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--line); outline:none; }
   #actionSpeedSlider::-webkit-slider-thumb{ -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); }
   .np-row{ display:flex; align-items:center; gap:12px; }
-  #npPlayerStage{ flex-shrink:0; position:relative; width:58px; height:48px; }
-  .np-lid{
-    position:absolute; left:0; bottom:0; width:22px; height:16px;
-    background: linear-gradient(160deg, #35322c, #1c1a16 60%, #121110);
-    border-radius:3px 5px 2px 7px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(0,0,0,0.4);
+  #npPlayerStage{ flex-shrink:0; position:relative; width:60px; height:50px; }
+  /* Plinth: the player's actual body/base sitting under the platter */
+  .np-plinth{
+    position:absolute; left:0; right:0; bottom:0; height:13px;
+    background: linear-gradient(180deg, #3a352c, #1d1a15 55%, #100e0c);
+    border-radius:5px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 3px rgba(0,0,0,0.5);
     z-index:0;
   }
+  /* Lid: propped open at the back, like a real turntable dust cover — glossy, translucent */
+  .np-lid{
+    position:absolute; left:0px; bottom:10px; width:24px; height:32px;
+    background: linear-gradient(155deg, rgba(215,228,238,0.30), rgba(150,165,180,0.10) 55%, rgba(110,120,135,0.16));
+    border:1px solid rgba(255,255,255,0.30);
+    border-radius:2px 9px 2px 2px;
+    transform-origin: bottom left;
+    transform: rotate(-56deg) skewX(-5deg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 3px 8px rgba(0,0,0,0.3);
+    z-index:0; pointer-events:none;
+  }
+  .np-lid::after{
+    content:''; position:absolute; top:6%; left:14%; width:20%; height:64%;
+    background: linear-gradient(160deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 75%);
+    border-radius:2px; transform:rotate(6deg);
+  }
   #npPlayerBody{
-    position:absolute; right:0; top:0; width:46px; height:46px; flex-shrink:0;
+    position:absolute; right:0; bottom:1px; width:46px; height:46px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:1;
   }
   .np-tonearm-base{
-    position:absolute; top:0; right:0; width:10px; height:10px; border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #4a4a4a, #232323);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.06);
+    position:absolute; top:0; right:0; width:11px; height:11px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #565656, #212121);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
     z-index:3;
   }
+  .np-tonearm-counterweight{
+    position:absolute; top:2.5px; right:-3px; width:6px; height:6px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #6a6a6a, #2a2a2a);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  /* The "hand": tonearm swings from parked (off the record) to resting on the grooves while playing */
   .np-tonearm{
-    position:absolute; top:3.5px; right:3.5px; width:24px; height:2.5px;
-    transform-origin: 88% 50%; transform: rotate(-30deg);
+    position:absolute; top:3.5px; right:3.5px; width:25px; height:2.5px;
+    transform-origin: 90% 50%; transform: rotate(-32deg);
     transition: transform 0.6s cubic-bezier(0.34,1.1,0.6,1);
-    z-index:3;
+    z-index:3; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.4));
   }
-  #npPlayerBody.playing .np-tonearm{ transform: rotate(8deg); }
+  #npPlayerBody.playing .np-tonearm{ transform: rotate(10deg); }
   .np-tonearm-shaft{
     position:absolute; inset:0; border-radius:2px;
-    background: linear-gradient(90deg, #cfc0a0, #9c8560);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    background: linear-gradient(90deg, #d9cba8, #a68a5f);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .np-tonearm-head{
-    position:absolute; left:-14%; top:-1.5px; width:6px; height:4.5px; border-radius:1px;
-    background:#111; box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
+    position:absolute; left:-20%; top:-2.5px; width:8px; height:7px; border-radius:1.5px 1px 1px 1.5px;
+    background: linear-gradient(100deg, #1a1a1a, #060606);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .np-tonearm-needle{
+    position:absolute; left:-2px; bottom:-2px; width:2px; height:3px; background:#d8d8d8;
+    box-shadow: 0 0 2px rgba(255,255,255,0.5);
   }
   #nowPlaying .disc{
     width:46px; height:46px; border-width:1.5px; position:relative;
@@ -546,40 +574,78 @@
     transition: transform 0.4s cubic-bezier(0.34,1.2,0.6,1);
   }
   #nowPlaying .disc.tap-spin{ animation-play-state: running !important; animation-duration: 0.5s !important; }
+  /* Soft ambient glow under the mini turntable while a track is actually playing */
+  #npPlayerBody::before{
+    content:''; position:absolute; inset:-6px; border-radius:50%; z-index:-1;
+    background: radial-gradient(circle, color-mix(in srgb, var(--gold) 35%, transparent) 0%, transparent 70%);
+    opacity:0; transition: opacity 0.5s ease;
+  }
+  #npPlayerBody.playing::before{ opacity:1; }
 
-  /* ---------- Liquid glass: frosted, translucent surfaces for the now-playing bar and modals ---------- */
+  /* ---------- Liquid glass: frosted, translucent surfaces across the app, with a drifting specular sheen ---------- */
   body.liquid-glass-on .modal{
-    background: color-mix(in srgb, var(--bg-raised) 68%, transparent);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 20px 44px rgba(0,0,0,0.35);
+    background: color-mix(in srgb, var(--bg-raised) 64%, transparent);
+    -webkit-backdrop-filter: blur(30px) saturate(175%);
+    backdrop-filter: blur(30px) saturate(175%);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 32px rgba(255,255,255,0.03), 0 20px 44px rgba(0,0,0,0.4);
     animation: glassBreathe 6s ease-in-out infinite;
+  }
+  body.liquid-glass-on .modal-btns .cancel{
+    background: color-mix(in srgb, var(--bg-raised) 48%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+  }
+  body.liquid-glass-on .tab{
+    background: color-mix(in srgb, var(--bg-raised) 52%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+    border-color: rgba(255,255,255,0.14);
+  }
+  body.liquid-glass-on .tab.active{
+    background: color-mix(in srgb, var(--coral) 78%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
   }
   /* :not(.primary) fix — previously EVERY .action-pill (including the solid-accent "primary"
      play/confirm pills) got flattened to the same translucent gray, so buttons that are
      supposed to pop in solid color looked washed out and broken with glass mode on. */
   body.liquid-glass-on .action-pill:not(.primary){
-    background: color-mix(in srgb, var(--bg-raised) 55%, transparent);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    backdrop-filter: blur(14px) saturate(150%);
+    background: color-mix(in srgb, var(--bg-raised) 53%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(155%);
+    backdrop-filter: blur(16px) saturate(155%);
     border-color: rgba(255,255,255,0.14);
   }
   body.liquid-glass-on .action-pill.primary{
     background: color-mix(in srgb, var(--coral) 80%, transparent);
-    -webkit-backdrop-filter: blur(14px) saturate(180%);
-    backdrop-filter: blur(14px) saturate(180%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    -webkit-backdrop-filter: blur(16px) saturate(185%);
+    backdrop-filter: blur(16px) saturate(185%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+    position:relative; overflow:hidden;
   }
   body.liquid-glass-on #nowPlaying{
-    background: color-mix(in srgb, var(--bg-raised) 62%, transparent);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    backdrop-filter: blur(22px) saturate(160%);
-    border-top-color: rgba(255,255,255,0.12);
+    background: color-mix(in srgb, var(--bg-raised) 58%, transparent);
+    -webkit-backdrop-filter: blur(28px) saturate(175%);
+    backdrop-filter: blur(28px) saturate(175%);
+    border-top-color: rgba(255,255,255,0.16);
+    animation: glassBreathe 6s ease-in-out infinite;
+  }
+  /* Drifting specular sheen — a soft diagonal highlight that slides across the glass,
+     kept only on non-scrolling surfaces so it never clips popovers or scrollable content. */
+  body.liquid-glass-on .action-pill.primary::before{
+    content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+    background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.22) 34%, rgba(255,255,255,0.03) 46%, transparent 60%);
+    background-size:240% 240%; background-position: 120% 50%;
+    animation: glassSheen 7s ease-in-out infinite; mix-blend-mode:screen;
+  }
+  @keyframes glassSheen{
+    0%{ background-position: 130% 50%; }
+    50%{ background-position: -30% 50%; }
+    100%{ background-position: 130% 50%; }
   }
   @keyframes glassBreathe{
-    0%, 100%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 20px 44px rgba(0,0,0,0.35); }
-    50%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.24), 0 20px 44px rgba(0,0,0,0.35); }
+    0%, 100%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 32px rgba(255,255,255,0.03), 0 20px 44px rgba(0,0,0,0.4); }
+    50%{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 32px rgba(255,255,255,0.06), 0 20px 44px rgba(0,0,0,0.4); }
   }
 
   #npInfo{ flex:1; min-width:0; position:relative; cursor:pointer; }
@@ -771,10 +837,11 @@
   <div class="np-row">
     <div id="npPlayerStage">
     <div class="np-lid"></div>
+    <div class="np-plinth"></div>
     <div id="npPlayerBody">
       <div class="disc" id="npDisc"><div class="disc-label" id="npDiscLabel"></div></div>
-      <div class="np-tonearm-base"></div>
-      <div class="np-tonearm"><div class="np-tonearm-shaft"></div><div class="np-tonearm-head"></div></div>
+      <div class="np-tonearm-base"><div class="np-tonearm-counterweight"></div></div>
+      <div class="np-tonearm"><div class="np-tonearm-shaft"></div><div class="np-tonearm-head"><div class="np-tonearm-needle"></div></div></div>
     </div>
     </div>
     <div id="npInfo"><div class="t" id="npTitle">—</div><div class="a" id="npArtist">—</div>
@@ -1363,6 +1430,39 @@
   let currentTheme = 'rosegold';
 
   // ---------------- Themes ----------------
+  // ---------------- Favicon re-theming: the browser-tab icon is redrawn on a canvas to match
+  // whatever --gold/--coral the current theme is using, so it visually matches the in-app logo.
+  // (The home-screen icon on an installed PWA is a separate, platform-cached file that can't be
+  // swapped after install — this only reaches the tab icon and the address-bar theme color.)
+  let faviconCanvas = null;
+  function updateFavicon(){
+    if(!faviconCanvas){ faviconCanvas = document.createElement('canvas'); faviconCanvas.width = 64; faviconCanvas.height = 64; }
+    const styles = getComputedStyle(document.documentElement);
+    const gold = (styles.getPropertyValue('--gold') || '#4A6CF7').trim();
+    const coral = (styles.getPropertyValue('--coral') || '#E3B23C').trim();
+    const ctx = faviconCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 64, 64);
+    const grad = ctx.createRadialGradient(24, 20, 2, 32, 32, 36);
+    grad.addColorStop(0, gold);
+    grad.addColorStop(1, coral);
+    ctx.beginPath();
+    ctx.arc(32, 32, 30, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    const link = $('faviconLink');
+    if(link) link.href = faviconCanvas.toDataURL('image/png');
+    const themeColorMeta = $('themeColorMeta');
+    if(themeColorMeta) themeColorMeta.setAttribute('content', coral);
+  }
+  let lastFaviconUpdate = 0;
+  function maybeUpdateFavicon(now){
+    // throttled version for the RGB hue-cycle loop — a full canvas redraw every animation
+    // frame would be wasteful, so this only actually redraws a few times per second.
+    if(now - lastFaviconUpdate < 200) return;
+    lastFaviconUpdate = now;
+    updateFavicon();
+  }
+
   const THEMES = {
     rosegold: { name: 'Rose Gold (default)', bg:'#221417', bgRaised:'#2E1D20', coral:'#F0A6A0', gold:'#D9B08C' },
     royal:    { name: 'Royal Blue',      bg:'#0A1330', bgRaised:'#131D45', coral:'#E3B23C', gold:'#4A6CF7' },
@@ -1397,6 +1497,7 @@
       const hue2 = (t * 360 + 130) % 360; // offset so the two accent colors stay complementary-ish, not identical
       document.documentElement.style.setProperty('--coral', `hsl(${hue1}, 85%, 62%)`);
       document.documentElement.style.setProperty('--gold', `hsl(${hue2}, 85%, 62%)`);
+      maybeUpdateFavicon(now);
       rgbAnimHandle = requestAnimationFrame(tick);
     }
     rgbAnimHandle = requestAnimationFrame(tick);
@@ -1500,6 +1601,7 @@
     }
     if(th.liquidGlass) setLiquidGlass(true); // one-tap iOS-style glass look
     dbPut('meta', { key: 'theme', value: key });
+    updateFavicon();
   }
 
   function renderThemeOptions(){
@@ -1598,6 +1700,7 @@
     root.setProperty('--coral', vals.coral);
     root.setProperty('--gold', vals.gold);
     updateCustomPreview();
+    updateFavicon();
   }
   const HEX_RE = /^#[0-9a-fA-F]{6}$/;
   CUSTOM_FIELDS.forEach(f => {
@@ -2138,8 +2241,19 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '33.1';
+  const APP_VERSION = '33.2';
   const CHANGELOG = [
+    { version: '33.2', title: 'Browser-tab icon now matches your theme', items: [
+      'The tab icon (favicon) is now redrawn on the fly to match whichever theme is equipped — same gold/coral gradient as the in-app logo, including live color-cycling on the RGB themes',
+      'The address-bar theme color updates alongside it',
+      'Heads up: this only reaches the browser tab icon — an already-installed home-screen icon is a platform-cached file that can\'t be swapped after install',
+    ]},
+    { version: '33.2', title: 'Mini record player rebuilt for real, Liquid Glass enhanced, UI polish', items: [
+      'The mini record player (bottom-left of the now-playing bar) is now an actual little turntable: a real plinth base, a propped-open lid, and a proper tonearm with a headshell + needle tip that swings down onto the grooves while playing and lifts back off when paused',
+      'Added a soft ambient glow under the turntable while a track is actually playing',
+      'Liquid Glass mode now covers more of the app — settings tabs and the modal cancel button get the frosted glass treatment too, not just the now-playing bar and primary buttons',
+      'Liquid Glass panels are deeper and glassier (stronger blur + saturation) and the primary action pill now has a slow drifting light sheen instead of a flat tint',
+    ]},
     { version: '33.1', title: 'DJ Mode reverted, mini record player back, real update-popup fix', items: [
       'Reverted the DJ Mode tonearm/jog changes from v33 — the tonearm swings onto the record on play again, and the jog overlay\'s flick-scratch gesture is back exactly as it was',
       'Added the lid and tonearm back onto the mini record player (bottom-left of the now-playing bar) — still just a visual, tap the disc to open the full player like before',
