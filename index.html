@@ -858,6 +858,7 @@
   <button id="importLibBtn" class="action-pill">Import library</button>
 </div>
 <input type="file" id="importLibInput" accept=".zip">
+<input type="file" id="importIntoPlaylistInput" accept=".zip">
 
 <div class="toast" id="toast"></div>
 
@@ -2428,8 +2429,12 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '34.1';
+  const APP_VERSION = '34.2';
   const CHANGELOG = [
+    { version: '34.2', title: 'Import a .zip straight into a specific playlist', items: [
+      'Any playlist (not All Songs) now has "Import .zip into [playlist name]" in its More options menu — pick a SideCut export .zip and every track it contains gets added directly into that playlist, on top of restoring whatever playlist structure the export itself had',
+      'Uses the same fixed matching from last version, so it still won\'t drag in unrelated songs that happen to share an id with something in the export',
+    ] },
     { version: '34.1', title: 'Fixed playlist import bug, timer leak, and added a freeze safety net', items: [
       'Fixed the real bug behind importing a playlist sometimes dragging an unrelated song from another playlist into it: imported track ids (like "t3") aren\'t actually unique between libraries, so importing could match a manifest track to a completely different local track that happened to share its id, then add that wrong track to the target playlist — import now matches existing tracks by name/artist/duration and always gives genuinely new tracks a fresh local id',
       'Fixed a hold-timer leak in the long-press "select multiple / reorder" popup on song rows that only cancelled on pointerup/pointerleave, not pointercancel — an interrupted press could let it fire late and pop the choice sheet after you\'d already moved on',
@@ -3245,6 +3250,13 @@
     exportBtn.addEventListener('click', () => { $('songActionsBackdrop').style.display='none'; isAllSongs ? exportLibrary() : exportPlaylist(); });
     list.appendChild(exportBtn);
 
+    if(!isAllSongs){
+      const importIntoBtn = document.createElement('button');
+      importIntoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Import .zip into "${escapeHtml(activePlaylist)}"`;
+      importIntoBtn.addEventListener('click', () => { $('songActionsBackdrop').style.display='none'; $('importIntoPlaylistInput').click(); });
+      list.appendChild(importIntoBtn);
+    }
+
     if(isAllSongs){
       const dupBtn = document.createElement('button');
       dupBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z"/></svg> Find duplicates`;
@@ -3377,6 +3389,11 @@
     const file = e.target.files[0];
     e.target.value = '';
     if(file) importLibrary(file);
+  });
+  $('importIntoPlaylistInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(file) importLibrary(file, activePlaylist);
   });
 
   // ---------------- Tabs / playlists ----------------
@@ -4162,9 +4179,9 @@
     }
   }
 
-  async function importLibrary(file){
+  async function importLibrary(file, targetPlaylist){
     if(typeof JSZip === 'undefined'){ toast('Import tool failed to load — check your connection and reload.'); return; }
-    toast('Importing library…', 3000);
+    toast(targetPlaylist ? `Importing into "${targetPlaylist}"…` : 'Importing library…', 3000);
     try{
       const zip = await JSZip.loadAsync(file);
       const manifestEntry = zip.file('manifest.json');
@@ -4211,13 +4228,26 @@
           if(id && !playlists[name].includes(id)) playlists[name].push(id);
         });
       });
+      // If importing straight into a specific playlist (e.g. dropping a .zip
+      // onto an existing playlist's "More options" menu), add every track
+      // this import touched — newly-added or matched-existing — into that
+      // playlist too, regardless of what the manifest's own playlist names
+      // were. This is on top of the manifest's own merge above, not instead
+      // of it, so importing a full library export into a playlist still
+      // preserves that export's original playlist structure as well.
+      if(targetPlaylist){
+        if(!playlists[targetPlaylist]) playlists[targetPlaylist] = [];
+        Object.values(idRemap).forEach(id => {
+          if(!playlists[targetPlaylist].includes(id)) playlists[targetPlaylist].push(id);
+        });
+      }
       playlists['All Songs'] = allTracks.map(t => t.id);
       saveMeta();
       $('emptyState').style.display = 'none';
       $('library').style.display = 'flex';
       renderTabs();
       renderList();
-      toast(`Imported ${count} track${count===1?'':'s'}`);
+      toast(`Imported ${count} track${count===1?'':'s'}${targetPlaylist ? ` into "${targetPlaylist}"` : ''}`);
     }catch(e){
       console.error(e);
       toast('Import failed: ' + (e.message || 'is that a valid SideCut .zip?'));
