@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head> 
@@ -2429,8 +2428,14 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '34.0';
+  const APP_VERSION = '34.1';
   const CHANGELOG = [
+    { version: '34.1', title: 'Fixed playlist import bug, timer leak, and added a freeze safety net', items: [
+      'Fixed the real bug behind importing a playlist sometimes dragging an unrelated song from another playlist into it: imported track ids (like "t3") aren\'t actually unique between libraries, so importing could match a manifest track to a completely different local track that happened to share its id, then add that wrong track to the target playlist — import now matches existing tracks by name/artist/duration and always gives genuinely new tracks a fresh local id',
+      'Fixed a hold-timer leak in the long-press "select multiple / reorder" popup on song rows that only cancelled on pointerup/pointerleave, not pointercancel — an interrupted press could let it fire late and pop the choice sheet after you\'d already moved on',
+      'Every click handler is now wrapped so a thrown error shows a toast and logs to console instead of silently doing nothing, in case buttons ever freeze again while playback keeps working',
+      'Double-tapping empty space now force-closes any popup that got stuck covering the screen, as a manual escape hatch',
+    ] },
     { version: '34.0', title: 'Fixed app-wide button freeze, playlist export now bundles real audio', items: [
       'Found the actual bug behind buttons randomly stopping working (while play/pause kept working): any track missing an artist tag threw an error inside the list renderer, and since almost every button — sort, tabs, kebab menu, reorder, switching playlists — re-renders the list, one bad track silently broke all of them for the rest of the session',
       'Tracks with missing name/artist metadata now fall back to "Untitled" / "Unknown artist" instead of crashing',
@@ -3765,6 +3770,7 @@
     });
     row.addEventListener('pointerup', () => clearTimeout(timer));
     row.addEventListener('pointerleave', () => clearTimeout(timer));
+    row.addEventListener('pointercancel', () => clearTimeout(timer));
   }
 
   function openHoldChoice(id){
@@ -4165,13 +4171,34 @@
       if(!manifestEntry){ toast('That doesn\'t look like a SideCut library file.'); return; }
       const manifest = JSON.parse(await manifestEntry.async('string'));
       let count = 0;
+      // Manifest ids (e.g. "t3") come from whatever device/session produced this
+      // export and are NOT globally unique — this library's own counter also
+      // produces "t3" etc, so a raw id match here does not mean "same track",
+      // it just means "some track happens to have this id". Trusting that was
+      // the actual bug: importing a playlist could silently pull in a totally
+      // unrelated local track that happened to share an id with a track named
+      // in the manifest, dragging its playlist membership along with it.
+      // Instead, match existing tracks by content (name+artist+duration) to
+      // decide if we truly already have a track, and always remap the
+      // manifest's id to that resolved local id before touching playlists.
+      const idRemap = {}; // manifest id -> local id
+      function findExistingByContent(m){
+        return allTracks.find(t => t.name === (m.name || 'Untitled')
+          && t.artist === (m.artist || 'Unknown artist')
+          && (t.duration || null) === (m.duration || null));
+      }
       for(const m of (manifest.tracks || [])){
-        if(allTracks.find(t => t.id === m.id)) continue; // already have it
+        const existing = findExistingByContent(m);
+        if(existing){ idRemap[m.id] = existing.id; continue; } // truly already have it
         const entry = zip.file(m.path);
         if(!entry) continue;
         const blob = await entry.async('blob');
         const url = URL.createObjectURL(blob);
-        const track = { id: m.id, file: blob, name: m.name || 'Untitled', artist: m.artist || 'Unknown artist', url, duration: m.duration || null, bpm: m.bpm ?? null, genre: m.genre || null, gain: m.gain ?? null, artBlob: null, artUrl: null };
+        // Always mint a fresh local id rather than reusing the manifest's id,
+        // since that id space is only meaningful within the exporting library.
+        const localId = 't' + (idCounter++);
+        idRemap[m.id] = localId;
+        const track = { id: localId, file: blob, name: m.name || 'Untitled', artist: m.artist || 'Unknown artist', url, duration: m.duration || null, bpm: m.bpm ?? null, genre: m.genre || null, gain: m.gain ?? null, artBlob: null, artUrl: null };
         allTracks.push(track);
         persistTrackMeta(track);
         count++;
@@ -4179,12 +4206,12 @@
       Object.keys(manifest.playlists || {}).forEach(name => {
         if(name === 'All Songs') return;
         if(!playlists[name]) playlists[name] = [];
-        (manifest.playlists[name] || []).forEach(id => {
-          if(!playlists[name].includes(id) && allTracks.find(t => t.id === id)) playlists[name].push(id);
+        (manifest.playlists[name] || []).forEach(rawId => {
+          const id = idRemap[rawId];
+          if(id && !playlists[name].includes(id)) playlists[name].push(id);
         });
       });
       playlists['All Songs'] = allTracks.map(t => t.id);
-      idCounter = Math.max(idCounter, allTracks.length);
       saveMeta();
       $('emptyState').style.display = 'none';
       $('library').style.display = 'flex';
@@ -6727,5 +6754,51 @@ function __releaseAllPointerCaptures(e){
 }
 window.addEventListener('pointerup', __releaseAllPointerCaptures, true);
 window.addEventListener('pointercancel', __releaseAllPointerCaptures, true);
+
+// ---------------- Click-freeze safety net ----------------
+// If any button click handler throws, the browser silently drops that one
+// dispatch and moves on — but if the same bug repeats (a stale reference to
+// a re-rendered element, a null track lookup, etc.) every button that goes
+// through a shared render path can start silently no-oping every time,
+// which looks exactly like "the whole app froze" even though play/pause
+// (driven by <audio> events, not click handlers) keeps working fine.
+// Wrap every click listener registration so a thrown error shows a toast
+// instead of silently doing nothing, and log it so the real cause is
+// visible in devtools next time it happens.
+(function(){
+  const realAdd = EventTarget.prototype.addEventListener;
+  EventTarget.prototype.addEventListener = function(type, listener, options){
+    if(type === 'click' && typeof listener === 'function'){
+      const wrapped = function(e){
+        try{ return listener.call(this, e); }
+        catch(err){
+          console.error('Click handler threw (caught by safety net):', err);
+          if(typeof toast === 'function') toast('Something went wrong with that tap — try again.');
+        }
+      };
+      return realAdd.call(this, type, wrapped, options);
+    }
+    return realAdd.call(this, type, listener, options);
+  };
+})();
+
+// If a modal-backdrop is left covering the screen with nothing visibly open
+// on top of it (e.g. its content failed to render), it silently blocks every
+// tap underneath — same "everything but audio stopped" symptom. A double-tap
+// on empty space now force-closes any stuck backdrop as a manual escape hatch.
+let __emptyTapCount = 0, __emptyTapTimer = null;
+document.addEventListener('pointerdown', (e) => {
+  const openBackdrop = [...document.querySelectorAll('.modal-backdrop')].find(b => getComputedStyle(b).display !== 'none');
+  if(!openBackdrop || e.target !== openBackdrop) { __emptyTapCount = 0; return; }
+  __emptyTapCount++;
+  clearTimeout(__emptyTapTimer);
+  __emptyTapTimer = setTimeout(() => { __emptyTapCount = 0; }, 600);
+  if(__emptyTapCount >= 2){
+    __emptyTapCount = 0;
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.display = 'none');
+    if(typeof toast === 'function') toast('Closed a stuck popup.');
+  }
+}, true);
+
 </script></body>
 </html>
