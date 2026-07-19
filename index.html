@@ -2429,8 +2429,13 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '34.3';
+  const APP_VERSION = '34.4';
   const CHANGELOG = [
+    { version: '34.4', title: 'Better lock-screen / notification media controls', items: [
+      'The notification/lock-screen scrubber now tracks actual playback position and duration instead of only showing play/pause — you can see and drag progress from there',
+      'Fixed album art in the notification always claiming to be 512x512 regardless of its real size, which could make Android reject or badly scale it; now offers several sizes so Android picks whichever fits',
+      'Added a stop control alongside play/pause/skip in the media notification',
+    ] },
     { version: '34.3', title: 'Fixed added files silently disappearing', items: [
       'Found the bug behind "I added a file and it\'s not in my library or any playlist": the file-type check only recognized a hardcoded list of extensions (mp3/m4a/wav/ogg/flac/aac), so a .wma/.opus/.aiff/.alac file — or any file your phone\'s picker handed back with a generic type instead of "audio/*" — got silently skipped with zero feedback',
       'Picked files are now accepted unless they\'re clearly a non-audio type (image, video, document, etc.), and skipped files now show up in the toast instead of vanishing silently',
@@ -4401,11 +4406,21 @@
 
   function updateMediaSession(t){
     if(!('mediaSession' in navigator)) return;
+    // Claiming a fixed "512x512" regardless of the art's real dimensions was
+    // fragile — Android's media notification can reject or badly scale
+    // artwork when the declared size doesn't match reality. Providing a
+    // spread of common sizes for the same image lets Android pick whichever
+    // fits its notification/lock-screen surface, without lying about any one
+    // specific size.
+    const artType = (t.artBlob && t.artBlob.type) || 'image/jpeg';
+    const artwork = t.artUrl ? [96, 128, 192, 256, 384, 512].map(size => ({
+      src: t.artUrl, sizes: `${size}x${size}`, type: artType
+    })) : [];
     navigator.mediaSession.metadata = new MediaMetadata({
       title: t.name,
       artist: t.artist,
       album: 'SideCut',
-      artwork: t.artUrl ? [{ src: t.artUrl, sizes: '512x512', type: (t.artBlob && t.artBlob.type) || 'image/jpeg' }] : [],
+      artwork,
     });
   }
 
@@ -4517,6 +4532,15 @@
     $('totalTime').textContent = fmtTime(a.duration);
     $('npDisc').classList.toggle('spinning', !a.paused); // safety net: keep visual state in sync even if a play/pause event was missed
     $('npPlayerBody').classList.toggle('playing', !a.paused);
+    if('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession){
+      try{
+        navigator.mediaSession.setPositionState({
+          duration: a.duration,
+          playbackRate: a.playbackRate || 1,
+          position: Math.min(a.currentTime, a.duration),
+        });
+      }catch(e){ /* fires if duration/position are momentarily out of range mid-seek — safe to ignore */ }
+    }
     savePlaybackState(false);
     if(repeatMode !== 'one'){
       const remaining = a.duration - a.currentTime;
@@ -6533,6 +6557,12 @@
       hardAdvance(-1, true);
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => hardAdvance(1, true));
+    try{
+      navigator.mediaSession.setActionHandler('stop', () => {
+        activeAudio().pause();
+        activeAudio().currentTime = 0;
+      });
+    }catch(e){ /* not all browsers support the stop action */ }
     try{
       navigator.mediaSession.setActionHandler('seekto', (details) => {
         if(details.seekTime != null) activeAudio().currentTime = details.seekTime;
