@@ -1284,6 +1284,10 @@
     </div>
 
     <div id="settingsPaneMore" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <button class="playlist-pick-btn" id="howToUseBtn" style="text-align:center;">How to use SideCut</button>
+      </div>
+
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:13px; color:var(--ink-dim);">Sleep timer</span>
@@ -1633,6 +1637,62 @@
     <div id="updateLogBody" style="display:flex; flex-direction:column; gap:16px; max-height:60vh; overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
     <div class="modal-btns">
       <button class="cancel" id="updateLogClose" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="howToUseBackdrop">
+  <div class="modal">
+    <h3>How to use SideCut</h3>
+    <div style="display:flex; flex-direction:column; gap:16px; max-height:65vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+
+      <div>
+        <div style="font-weight:600; font-size:14px; margin-bottom:6px;">Getting music into your library</div>
+        <div style="font-size:12.5px; color:var(--ink-dim); line-height:1.5;">
+          SideCut plays audio files already saved on your device — it doesn't stream or fetch anything itself. One way to get songs onto SideCut is via Spotify. Click onto your playlist, Click share, then copy the link. After that go to Spoticatch, Spotisaver or any other Spotify to mp3 downloader. after that click files and select all of your songs and import them. Now you have all of your songs locally stored right on yout device in one specific setting.
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink-dim); margin-top:8px;">
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Tap <b>+ Files</b> to pick one or more individual songs</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Tap <b>+ Add folder</b> to grab a whole folder at once — handy for a full album or a Downloads folder</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Use <b>Import library</b> to restore a full backup .zip, including playlists and tags</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:600; font-size:14px; margin-bottom:6px;">Playing music</div>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink-dim);">
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Tap any song in your list to start playing it</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Use the mini player at the bottom for play/pause, skip, and shuffle</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Tap the <b>⋮</b> (kebab) next to a song for more options — add to playlist, play next, delete, and more</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:600; font-size:14px; margin-bottom:6px;">Customizing the look</div>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink-dim);">
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Open <b>Settings</b> (gear icon) → <b>Theme</b> to pick a look, or build your own custom theme</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Under <b>Settings → Glow</b>, mix and match edge lines, blur bands, and corner glow — all independent toggles, all customizable</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Settings → Playback has crossfade, gapless mode, and normalization</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Settings → Equalizer has 8 adjustable bands plus presets</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:600; font-size:14px; margin-bottom:6px;">Playlists &amp; organizing</div>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink-dim);">
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Create playlists from the Playlists tab, then add songs via the kebab menu on any track</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span>Long-press a song row to select multiple tracks at once</span></div>
+          <div style="display:flex; gap:8px;"><span style="color:var(--coral); flex-shrink:0;">•</span><span><b>Export library</b> anytime to back everything up as a .zip you can restore later</span></div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:var(--ink-dim); border-top:1px solid var(--line); padding-top:12px;">
+        Stuck on something, or a button not working the way you'd expect? Use the thumbs-down/feedback option where you're chatting with Claude to report it.
+      </div>
+
+    </div>
+    <div class="modal-btns">
+      <button class="cancel" id="howToUseClose" style="flex:1;">Close</button>
     </div>
   </div>
 </div>
@@ -2770,8 +2830,11 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '35.2';
+  const APP_VERSION = '35.3';
   const CHANGELOG = [
+    { version: '35.3', title: 'Added a "How to use SideCut" guide', items: [
+      'New button at the top of Settings → More opens a quick walkthrough: getting music into your library, playing/organizing songs, and where to find the theme, glow, playback, and EQ settings',
+    ] },
     { version: '35.2', title: 'Fixed Settings/Files buttons not responding while playing in RGB+ with glow blur or corners on', items: [
       'Traced it down: the top/bottom blur band and the fading corner glow were painted directly over the header (Settings) and the Files/Add-folder strip — on some mobile browsers a blurred, animating layer like that can swallow taps even though it was set to pass clicks straight through',
       'The header and Files strip now sit in front of those glow layers by design, and the glow bands themselves are pulled back from the true edges so they can\'t geometrically cover a real button in the first place — should be solid now regardless of which glow options are on',
@@ -3047,6 +3110,9 @@
     renderUpdateLog();
     $('updateLogBackdrop').style.display = 'flex';
   });
+  $('howToUseBtn').addEventListener('click', () => { $('howToUseBackdrop').style.display = 'flex'; });
+  $('howToUseClose').addEventListener('click', () => { $('howToUseBackdrop').style.display = 'none'; });
+  $('howToUseBackdrop').addEventListener('click', (e) => { if(e.target === $('howToUseBackdrop')) $('howToUseBackdrop').style.display = 'none'; });
   async function renderVersionSnapshots(){
     const rows = (await dbGetAll('meta')).filter(r => r.key.indexOf('versionSnapshot_') === 0)
       .sort((a,b) => b.value.savedAt - a.value.savedAt);
