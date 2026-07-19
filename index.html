@@ -623,6 +623,21 @@
   }
   #npPlayerBody.playing::before{ opacity: calc(1 + var(--np-glow-boost, 0)); transform: scale(calc(1 + var(--np-glow-boost, 0) * 0.35)); }
 
+  /* RGB+ edge glow line: one solid line centered on the right screen edge that grows/shrinks
+     in length with the bass, no blur or radial fade — just a clean line that pumps. Hidden
+     unless RGB+ theme is active and something is playing. --edge-glow-len is 0-100 (% of
+     viewport height) and is driven live by the same bass analyser as the turntable glow. */
+  #edgeGlowLine{
+    position:fixed; top:50%; right:0; width:3px;
+    height: calc(var(--edge-glow-len, 0) * 1%);
+    background: var(--coral);
+    transform: translateY(-50%);
+    z-index:9998; pointer-events:none;
+    opacity:0; transition: opacity 0.3s ease;
+    border-radius:2px;
+  }
+  #edgeGlowLine.active{ opacity:1; }
+
   #ttPopupStage{ position:relative; width:100%; height:160px; perspective:480px; margin:6px 0 4px; }
   #ttPopupStage .np-tt-3d{ position:absolute; left:50%; bottom:8px; width:110px; height:98px; margin-left:-55px; transform-style:preserve-3d; }
   #ttPopupStage .np-plinth{ height:26px; border-radius:8px; }
@@ -810,6 +825,8 @@
 </style>
 </head>
 <body>
+
+<div id="edgeGlowLine" aria-hidden="true"></div>
 
 <header>
   <div class="brand">
@@ -1023,6 +1040,13 @@
         </div>
         <input type="range" id="rgbSpeedSlider" min="2" max="20" step="1" value="8" style="width:100%;">
       </div>
+      <div id="edgeGlowLenWrap" style="display:none; margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--ink-dim); margin-bottom:6px;">
+          <span>Edge glow line length</span><span id="edgeGlowLenValue">15%</span>
+        </div>
+        <input type="range" id="edgeGlowLenSlider" min="5" max="60" step="1" value="15" style="width:100%;">
+        <div style="font-size:11px; color:var(--ink-dim); margin-top:4px;">RGB+ only — the resting length of the glow line on the screen edge before it pumps with the bass.</div>
+      </div>
 
       <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:13px; color:var(--ink-dim);">Liquid glass mode</span>
@@ -1103,21 +1127,22 @@
     </div>
 
     <div id="settingsPaneEQ" style="display:none;">
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        <div>
-          <div style="display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-dim); margin-bottom:4px;"><span>Bass</span><span id="eqBassValue">0dB</span></div>
-          <input type="range" id="eqBassSlider" min="-12" max="12" step="1" value="0" style="width:100%;">
-        </div>
-        <div>
-          <div style="display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-dim); margin-bottom:4px;"><span>Mid</span><span id="eqMidValue">0dB</span></div>
-          <input type="range" id="eqMidSlider" min="-12" max="12" step="1" value="0" style="width:100%;">
-        </div>
-        <div>
-          <div style="display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-dim); margin-bottom:4px;"><span>Treble</span><span id="eqTrebleValue">0dB</span></div>
-          <input type="range" id="eqTrebleSlider" min="-12" max="12" step="1" value="0" style="width:100%;">
-        </div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:4px; padding:8px 4px 0;" id="eqBandsWrap"></div>
+      <div style="display:flex; justify-content:center; margin-top:4px;">
+        <button class="tab" id="eqResetBtn" style="padding:5px 14px; font-size:11.5px;">Reset to flat</button>
       </div>
-      <div style="font-size:11px; color:var(--ink-dim); margin-top:12px;">Applies to any song without its own Vibe set (see each song's ⋯ menu).</div>
+      <div style="font-size:12px; color:var(--ink-dim); margin:16px 0 8px;">Presets</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <button class="tab eq-preset-btn" data-preset="flat" style="padding:5px 12px; font-size:12px;">Flat</button>
+        <button class="tab eq-preset-btn" data-preset="bassBoost" style="padding:5px 12px; font-size:12px;">Bass Boost</button>
+        <button class="tab eq-preset-btn" data-preset="vocal" style="padding:5px 12px; font-size:12px;">Vocal</button>
+        <button class="tab eq-preset-btn" data-preset="bright" style="padding:5px 12px; font-size:12px;">Bright</button>
+        <button class="tab eq-preset-btn" data-preset="warm" style="padding:5px 12px; font-size:12px;">Warm</button>
+        <button class="tab eq-preset-btn" data-preset="rock" style="padding:5px 12px; font-size:12px;">Rock</button>
+        <button class="tab eq-preset-btn" data-preset="electronic" style="padding:5px 12px; font-size:12px;">Electronic</button>
+        <button class="tab eq-preset-btn" data-preset="acoustic" style="padding:5px 12px; font-size:12px;">Acoustic</button>
+      </div>
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:12px;">Applies to any song without its own Vibe set (see each song's ⋯ menu). Drag any band, or tap a preset to jump straight to it.</div>
     </div>
 
     <div id="settingsPaneMore" style="display:none;">
@@ -1704,6 +1729,7 @@
   }
   let glowLoopHandle = null;
   let lineLevel = 0; // single smoothed bass level driving the strip ripple
+  let edgeGlowBaseLen = 15; // 0-100, adjustable in Settings — floor length the edge line sits at before the beat pumps it up
   let waveSeed = Math.random() * 1000;
   function flattenSeekWave(){
     const p = $('seekWavePath');
@@ -1717,12 +1743,16 @@
     glowFrameSkip = 0;
     flattenSeekWave();
     const ttGlow = $('npPlayerBody'); if(ttGlow) ttGlow.style.setProperty('--np-glow-boost', '0');
+    const edgeLine = $('edgeGlowLine');
+    if(edgeLine){ edgeLine.classList.remove('active'); edgeLine.style.setProperty('--edge-glow-len', '0'); }
   }
   let glowFrameSkip = 0;
   function startGlowSync(){
     if(glowLoopHandle) return; // already running
     ensureGlowAnalyser(activeIdx);
     const svg = $('seekWaveSvg'), path = $('seekWavePath');
+    const edgeLine = $('edgeGlowLine');
+    if(edgeLine) edgeLine.classList.add('active');
     function tick(){
       glowLoopHandle = requestAnimationFrame(tick);
       if(!(THEMES[currentTheme] && THEMES[currentTheme].rgbPlus)) { stopGlowSync(); return; }
@@ -1745,6 +1775,12 @@
       // on the player itself instead of a full-screen bar.
       const ttGlow = $('npPlayerBody');
       if(ttGlow) ttGlow.style.setProperty('--np-glow-boost', (lineLevel * 0.6).toFixed(2));
+      // Edge glow line: base length (from the adjustable setting) plus a bass-driven pump on top.
+      const edgeLine = $('edgeGlowLine');
+      if(edgeLine){
+        const pumped = Math.min(100, edgeGlowBaseLen + lineLevel * (100 - edgeGlowBaseLen));
+        edgeLine.style.setProperty('--edge-glow-len', pumped.toFixed(1));
+      }
       if(lineLevel < 0.03){
         svg.classList.remove('live');
         path.setAttribute('d', 'M0,11 L100,11');
@@ -1814,12 +1850,18 @@
       container.appendChild(btn);
     });
     $('rgbSpeedWrap').style.display = (THEMES[currentTheme] && THEMES[currentTheme].rgb) ? '' : 'none';
+    $('edgeGlowLenWrap').style.display = (THEMES[currentTheme] && THEMES[currentTheme].rgbPlus) ? '' : 'none';
   }
   $('rgbSpeedSlider').addEventListener('input', (e) => {
     rgbSpeedSec = parseInt(e.target.value, 10);
     $('rgbSpeedValue').textContent = rgbSpeedSec + 's';
     dbPut('meta', { key: 'rgbSpeedSec', value: rgbSpeedSec });
     if(THEMES[currentTheme] && THEMES[currentTheme].rgb) startRgbAnimation(); // restart with new speed
+  });
+  $('edgeGlowLenSlider').addEventListener('input', (e) => {
+    edgeGlowBaseLen = parseInt(e.target.value, 10);
+    $('edgeGlowLenValue').textContent = edgeGlowBaseLen + '%';
+    dbPut('meta', { key: 'edgeGlowBaseLen', value: edgeGlowBaseLen });
   });
   function showSettingsTab(tab){
     $('settingsPaneTheme').style.display = tab === 'theme' ? '' : 'none';
@@ -2066,24 +2108,49 @@
     const t = allTracks.find(tr => tr.id === queue[queueIndex]);
     if(t && !t.vibe) applyEQ(t, activeIdx);
   }
-  $('eqBassSlider').addEventListener('input', (e) => {
-    globalEQ.bass = parseInt(e.target.value, 10);
-    $('eqBassValue').textContent = globalEQ.bass + 'dB';
+  function saveGlobalEQ(){
     dbPut('meta', { key: 'eq', value: globalEQ });
     applyLiveEQIfNoVibe();
+  }
+  function renderEQSliders(){
+    const wrap = $('eqBandsWrap');
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    EQ_BANDS.forEach(b => {
+      const val = globalEQ[b.key] || 0;
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:6px; flex:1;';
+      col.innerHTML = `
+        <span class="eq-band-value" style="font-size:10.5px; color:var(--ink-dim); font-family:'JetBrains Mono',monospace;">${val > 0 ? '+' : ''}${val}</span>
+        <input type="range" class="eq-band-slider" data-band="${b.key}" min="-12" max="12" step="1" value="${val}"
+          style="writing-mode:vertical-lr; direction:rtl; width:22px; height:120px; accent-color:var(--coral);">
+        <span style="font-size:9.5px; color:var(--ink-dim);">${b.label}</span>
+      `;
+      wrap.appendChild(col);
+    });
+    wrap.querySelectorAll('.eq-band-slider').forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        const band = e.target.dataset.band;
+        const val = parseInt(e.target.value, 10);
+        globalEQ[band] = val;
+        e.target.previousElementSibling.textContent = (val > 0 ? '+' : '') + val;
+        saveGlobalEQ();
+      });
+    });
+  }
+  function applyEQPreset(key){
+    const preset = EQ_PRESETS[key];
+    if(!preset) return;
+    globalEQ = { ...flatEQ() };
+    EQ_BANDS.forEach(b => globalEQ[b.key] = preset[b.key] || 0);
+    renderEQSliders();
+    saveGlobalEQ();
+    document.querySelectorAll('.eq-preset-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.preset === key));
+  }
+  document.querySelectorAll('.eq-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyEQPreset(btn.dataset.preset));
   });
-  $('eqMidSlider').addEventListener('input', (e) => {
-    globalEQ.mid = parseInt(e.target.value, 10);
-    $('eqMidValue').textContent = globalEQ.mid + 'dB';
-    dbPut('meta', { key: 'eq', value: globalEQ });
-    applyLiveEQIfNoVibe();
-  });
-  $('eqTrebleSlider').addEventListener('input', (e) => {
-    globalEQ.treble = parseInt(e.target.value, 10);
-    $('eqTrebleValue').textContent = globalEQ.treble + 'dB';
-    dbPut('meta', { key: 'eq', value: globalEQ });
-    applyLiveEQIfNoVibe();
-  });
+  $('eqResetBtn').addEventListener('click', () => applyEQPreset('flat'));
 
   // ---------------- Vibe picker (per-song EQ preset) ----------------
   function openVibePicker(id){
@@ -2367,6 +2434,12 @@
         $('rgbSpeedValue').textContent = rgbSpeedSec + 's';
         if(THEMES[currentTheme] && THEMES[currentTheme].rgb) startRgbAnimation();
       }
+      const edgeGlowLenRow = metaRows.find(r => r.key === 'edgeGlowBaseLen');
+      if(edgeGlowLenRow && typeof edgeGlowLenRow.value === 'number'){
+        edgeGlowBaseLen = edgeGlowLenRow.value;
+        $('edgeGlowLenSlider').value = edgeGlowBaseLen;
+        $('edgeGlowLenValue').textContent = edgeGlowBaseLen + '%';
+      }
       const crossfadeRow = metaRows.find(r => r.key === 'crossfadeSeconds');
       if(crossfadeRow && typeof crossfadeRow.value === 'number'){
         crossfadeSeconds = crossfadeRow.value;
@@ -2377,14 +2450,9 @@
       if(hiddenRow && Array.isArray(hiddenRow.value)) hiddenPlaylists = new Set(hiddenRow.value);
       const eqRow = metaRows.find(r => r.key === 'eq');
       if(eqRow && eqRow.value){
-        globalEQ = eqRow.value;
-        $('eqBassSlider').value = globalEQ.bass;
-        $('eqBassValue').textContent = globalEQ.bass + 'dB';
-        $('eqMidSlider').value = globalEQ.mid;
-        $('eqMidValue').textContent = globalEQ.mid + 'dB';
-        $('eqTrebleSlider').value = globalEQ.treble;
-        $('eqTrebleValue').textContent = globalEQ.treble + 'dB';
+        globalEQ = migrateLegacyEQ(eqRow.value);
       }
+      renderEQSliders();
       const statsRow = metaRows.find(r => r.key === 'stats');
       if(statsRow && statsRow.value){
         totalListenSeconds = statsRow.value.totalListenSeconds || 0;
@@ -2429,8 +2497,15 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '34.4';
+  const APP_VERSION = '34.5';
   const CHANGELOG = [
+    { version: '34.5', title: 'Advanced 8-band graphic equalizer + RGB+ edge glow line', items: [
+      'Replaced the old 3-slider bass/mid/treble EQ with a real 8-band graphic equalizer (60Hz, 150Hz, 400Hz, 1K, 2.4K, 6K, 12K, 16K) — drag any band independently for much finer control',
+      'Added genre presets: Bass Boost, Vocal, Bright, Warm, Rock, Electronic, Acoustic, plus Flat to reset instantly',
+      'Your existing EQ setting carries over automatically — it\'s spread across the new bands so nothing resets to flat on update',
+      'Per-song Vibe presets (song ⋯ menu) and DJ Mode\'s kill switches both work with the new 8-band system under the hood, no change needed on your end',
+      'RGB+ theme now also draws a single solid glow line on the right screen edge that pumps in length with the bass — no blur/fade, just a clean line. Length is adjustable in Settings → Theme (RGB+ only)',
+    ] },
     { version: '34.4', title: 'Better lock-screen / notification media controls', items: [
       'The notification/lock-screen scrubber now tracks actual playback position and duration instead of only showing play/pause — you can see and drag progress from there',
       'Fixed album art in the notification always claiming to be 512x512 regardless of its real size, which could make Android reject or badly scale it; now offers several sizes so Android picks whichever fits',
@@ -2837,19 +2912,59 @@
   function inactiveAudio(){ return audios[1-activeIdx]; }
 
   // ---------------- Volume normalization + Equalizer (Web Audio API graph) ----------------
-  // Chain per audio element: source -> bass -> mid -> treble -> gain -> destination.
+  // Chain per audio element: source -> [8 EQ bands in series] -> gain -> destination.
   // Both normalization and the EQ/vibe system share this same graph.
   let audioCtx = null;
   const gainNodes = [null, null];
-  const eqNodes = [null, null]; // { bass, mid, treble }
-  let globalEQ = { bass: 0, mid: 0, treble: 0 };
-  const VIBES = {
-    bassBoost: { name: 'Bass Boost', bass: 8, mid: 0, treble: -1 },
-    vocal:     { name: 'Vocal Boost', bass: -2, mid: 5, treble: 2 },
-    bright:    { name: 'Bright', bass: -1, mid: 1, treble: 6 },
-    warm:      { name: 'Warm', bass: 4, mid: 1, treble: -3 },
-    flat:      { name: 'Flat', bass: 0, mid: 0, treble: 0 },
+  const eqNodes = [null, null]; // array of 8 BiquadFilterNodes per audio element, low to high
+  // 8-band graphic EQ, roughly matching a typical hardware/software EQ layout.
+  const EQ_BANDS = [
+    { key: 'sub',    freq: 60,    label: '60' },
+    { key: 'bass',   freq: 150,   label: '150' },
+    { key: 'lowMid', freq: 400,   label: '400' },
+    { key: 'mid',    freq: 1000,  label: '1K' },
+    { key: 'upMid',  freq: 2400,  label: '2.4K' },
+    { key: 'presence', freq: 6000, label: '6K' },
+    { key: 'brilliance', freq: 12000, label: '12K' },
+    { key: 'air',    freq: 16000, label: '16K' },
+  ];
+  function flatEQ(){
+    const o = {};
+    EQ_BANDS.forEach(b => o[b.key] = 0);
+    return o;
+  }
+  let globalEQ = flatEQ();
+  // Old saves only had bass/mid/treble — spread each into the nearest new bands so
+  // nobody's existing EQ setting silently resets to flat on upgrade.
+  function migrateLegacyEQ(saved){
+    if(!saved) return flatEQ();
+    if('sub' in saved && 'air' in saved) return { ...flatEQ(), ...saved }; // already new-format
+    if('bass' in saved || 'mid' in saved || 'treble' in saved){
+      const migrated = flatEQ();
+      migrated.sub = saved.bass || 0;
+      migrated.bass = saved.bass || 0;
+      migrated.lowMid = Math.round((saved.bass || 0) * 0.4);
+      migrated.mid = saved.mid || 0;
+      migrated.upMid = saved.mid || 0;
+      migrated.presence = saved.treble || 0;
+      migrated.brilliance = saved.treble || 0;
+      migrated.air = Math.round((saved.treble || 0) * 0.6);
+      return migrated;
+    }
+    return flatEQ();
+  }
+  const EQ_PRESETS = {
+    flat:       { name: 'Flat',        sub:0,  bass:0,  lowMid:0,  mid:0,  upMid:0,  presence:0,  brilliance:0,  air:0 },
+    bassBoost:  { name: 'Bass Boost',  sub:7,  bass:6,  lowMid:2,  mid:0,  upMid:-1, presence:-1, brilliance:0,  air:0 },
+    vocal:      { name: 'Vocal Boost', sub:-3, bass:-2, lowMid:0,  mid:4,  upMid:5,  presence:3,  brilliance:1,  air:0 },
+    bright:     { name: 'Bright',      sub:-2, bass:-1, lowMid:-1, mid:0,  upMid:2,  presence:4,  brilliance:5,  air:4 },
+    warm:       { name: 'Warm',        sub:3,  bass:4,  lowMid:2,  mid:1,  upMid:-1, presence:-2, brilliance:-3, air:-2 },
+    rock:       { name: 'Rock',        sub:4,  bass:3,  lowMid:-1, mid:-1, upMid:2,  presence:3,  brilliance:3,  air:2 },
+    electronic: { name: 'Electronic',  sub:6,  bass:4,  lowMid:0,  mid:-2, upMid:0,  presence:2,  brilliance:4,  air:5 },
+    acoustic:   { name: 'Acoustic',    sub:0,  bass:1,  lowMid:2,  mid:3,  upMid:2,  presence:1,  brilliance:2,  air:1 },
   };
+  // VIBES kept as an alias so the existing per-song Vibe picker (song ⋯ menu) keeps working unchanged.
+  const VIBES = EQ_PRESETS;
 
   function ensureAudioGraph(){
     if(audioCtx) return;
@@ -2857,12 +2972,15 @@
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audios.forEach((el, idx) => {
         const src = audioCtx.createMediaElementSource(el);
-        const bass = audioCtx.createBiquadFilter();
-        bass.type = 'lowshelf'; bass.frequency.value = 200;
-        const mid = audioCtx.createBiquadFilter();
-        mid.type = 'peaking'; mid.frequency.value = 1000; mid.Q.value = 0.8;
-        const treble = audioCtx.createBiquadFilter();
-        treble.type = 'highshelf'; treble.frequency.value = 4000;
+        const bandNodes = EQ_BANDS.map((b, i) => {
+          const f = audioCtx.createBiquadFilter();
+          if(i === 0){ f.type = 'lowshelf'; }
+          else if(i === EQ_BANDS.length - 1){ f.type = 'highshelf'; }
+          else { f.type = 'peaking'; f.Q.value = 1.1; }
+          f.frequency.value = b.freq;
+          return f;
+        });
+        for(let i = 0; i < bandNodes.length - 1; i++) bandNodes[i].connect(bandNodes[i+1]);
         const gain = audioCtx.createGain();
         const deckGain = audioCtx.createGain(); // per-deck DJ Mode gain knob, on top of normalization gain
         // Limiter: bass boosts + volume normalization can push the signal past 0dB, which
@@ -2874,8 +2992,9 @@
         limiter.ratio.value = 16;
         limiter.attack.value = 0.003;
         limiter.release.value = 0.25;
-        src.connect(bass).connect(mid).connect(treble).connect(gain).connect(deckGain).connect(limiter).connect(audioCtx.destination);
-        eqNodes[idx] = { bass, mid, treble };
+        src.connect(bandNodes[0]);
+        bandNodes[bandNodes.length - 1].connect(gain).connect(deckGain).connect(limiter).connect(audioCtx.destination);
+        eqNodes[idx] = bandNodes;
         gainNodes[idx] = gain;
         deckGainNodes[idx] = deckGain;
         limiterNodes[idx] = limiter;
@@ -2895,10 +3014,8 @@
     ensureAudioGraph();
     const nodes = eqNodes[audioIdx];
     if(!nodes) return;
-    const preset = VIBES[t.vibe] || globalEQ;
-    nodes.bass.gain.value = preset.bass;
-    nodes.mid.gain.value = preset.mid;
-    nodes.treble.gain.value = preset.treble;
+    const preset = (t.vibe && VIBES[t.vibe]) || globalEQ;
+    EQ_BANDS.forEach((b, i) => { nodes[i].gain.value = preset[b.key] || 0; });
   }
   function applyNormalizedGain(t, audioIdx){
     ensureAudioGraph();
@@ -4904,7 +5021,7 @@
     const blendGain = audioCtx.createGain();
     blendGain.gain.value = 1; // the crossfade-blend node — set by djCrossfadeToNext's fade loop only
     knobGain.connect(blendGain);
-    blendGain.connect(eqNodes[0].bass);
+    blendGain.connect(eqNodes[0][0]); // route into the first (lowest) band of the 8-band EQ chain
     deck.knobGainNode = knobGain;
     deck.gainNode = blendGain; // "gainNode" stays the name djCrossfadeToNext already fades
     return blendGain;
@@ -5558,6 +5675,14 @@
   });
 
   // ---------------- Kill EQ (per-band mute, real DJ mixer behavior) ----------------
+  // Groups the 8 graphic-EQ bands into the classic 3-knob DJ mixer layout (low/mid/high)
+  // so the existing kill buttons still make sense even though the underlying EQ now has
+  // more bands than a simple bass/mid/treble split.
+  const KILL_BAND_GROUPS = {
+    bass: ['sub', 'bass'],
+    mid: ['lowMid', 'mid', 'upMid'],
+    treble: ['presence', 'brilliance', 'air'],
+  };
   const killState = { bass: false, mid: false, treble: false };
   const killButtons = { bass: $('killLow'), mid: $('killMid'), treble: $('killHigh') };
   function applyKillState(){
@@ -5566,9 +5691,14 @@
     if(!nodes) return;
     const t = allTracks.find(tr => tr.id === djCurrentTrackId); // the DJ deck's own track, not the main player's queue
     const preset = (t && VIBES[t.vibe]) || globalEQ;
-    nodes.bass.gain.value = killState.bass ? -40 : preset.bass;
-    nodes.mid.gain.value = killState.mid ? -40 : preset.mid;
-    nodes.treble.gain.value = killState.treble ? -40 : preset.treble;
+    Object.keys(KILL_BAND_GROUPS).forEach(group => {
+      const killed = killState[group];
+      KILL_BAND_GROUPS[group].forEach(bandKey => {
+        const bandIdx = EQ_BANDS.findIndex(b => b.key === bandKey);
+        if(bandIdx === -1) return;
+        nodes[bandIdx].gain.value = killed ? -40 : (preset[bandKey] || 0);
+      });
+    });
   }
   Object.keys(killButtons).forEach(band => {
     killButtons[band].addEventListener('click', () => {
