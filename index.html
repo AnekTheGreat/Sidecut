@@ -2736,8 +2736,13 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '35';
+  const APP_VERSION = '35.1';
   const CHANGELOG = [
+    { version: '35.1', title: 'Fixed play button getting stuck on pause after auto-advancing', items: [
+      'When a song finished and the next one started automatically (crossfade or gapless), the play/pause button could get stuck showing "paused" even though the new song was actually playing',
+      'Same root cause was also silencing RGB+\'s glow sync right after auto-advance — that\'s fixed too, glow now keeps pumping straight through into the next song',
+      'Cause: the outgoing track was paused a beat before internal bookkeeping caught up, so its pause event looked like the currently-active track had paused — reordered so that can\'t happen',
+    ] },
     { version: '35', title: 'Full customizable glow suite, real settings reorganization, EQ + tap-target fixes', items: [
       'New Settings → Glow tab, split out from Theme, with a proper Liquid Glass toggle and clearly grouped sections instead of one long scroll',
       'RGB+ now supports a mix-and-match glow suite: the original right edge line, a new mirrored left edge line, a soft blurred glow band across the top and bottom, and fading RGB glow in all four corners — toggle any combination on independently',
@@ -4826,13 +4831,24 @@
     crossfadeFinishing = true;
     if(crossfadeRAF){ clearInterval(crossfadeRAF); crossfadeRAF = null; }
     const cur = activeAudio();
-    cur.pause(); cur.currentTime = 0; cur.volume = 1;
+    // Flip activeIdx BEFORE pausing the outgoing track. cur.pause() fires a
+    // synchronous 'pause' event, and onPauseEvt only reacts if its target is
+    // still the active audio element — if activeIdx hadn't flipped yet, the
+    // outgoing track's pause looked like "the active track paused," which
+    // reset the play button to the paused icon and killed RGB+ glow sync,
+    // even though the incoming track was already playing at full volume.
     activeIdx = 1 - activeIdx;
+    cur.pause(); cur.currentTime = 0; cur.volume = 1;
     activeAudio().volume = 1; // the audio that just became active (the incoming track)
     queueIndex = nextIndex;
     crossfadeTriggered = false;
     pendingNextIndex = null;
     crossfadeFinishing = false;
+    // The incoming track was already playing before the flip (it ramped in during
+    // the fade), so no fresh 'play' event fires for it now that it's active — make
+    // sure the UI/glow reflect "playing" directly instead of waiting on an event
+    // that was never going to come.
+    onPlayEvt({ target: activeAudio() });
     savePlaybackState(true);
   }
 
@@ -4986,7 +5002,7 @@
         gaplessPreloadedFor = null;
         nxt.currentTime = 0;
         applyNormalizedGain(nextTrack, activeIdx); applyEQ(nextTrack, activeIdx);
-        nxt.play().catch(() => recoverAudio(nxt, 'gapless play failed'));
+        nxt.play().then(() => onPlayEvt({ target: nxt })).catch(() => recoverAudio(nxt, 'gapless play failed'));
         updateNowPlayingUI(nextTrack);
         savePlaybackState(true);
         return;
