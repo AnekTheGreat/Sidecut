@@ -967,6 +967,7 @@
 </div>
 <input type="file" id="importLibInput" accept=".zip">
 <input type="file" id="importIntoPlaylistInput" accept=".zip">
+<input type="file" id="addFilesToPlaylistInput" accept="audio/*,.mp3,.m4a,.wav,.flac,.ogg,.aac,.wma,.opus,.aiff,.alac" multiple>
 
 <div class="toast" id="toast"></div>
 
@@ -1758,6 +1759,7 @@
   let allTracks = [];      // { id, file, name, artist, url, duration }
   let searchQuery = '';    // live search filter, lowercase
   let playlists = { 'All Songs': [], 'Favorites': [] }; // name -> array of track ids
+  const UNSORTED_VIEW = '__unsorted__'; // virtual tab: tracks not in any real playlist besides All Songs
   let activePlaylist = 'All Songs';
   let hiddenPlaylists = new Set();
   let currentSort = 'default'; // default | alpha | artist | genre | recent
@@ -2844,8 +2846,17 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '35.4';
+  const APP_VERSION = '35.5';
   const CHANGELOG = [
+    { version: '35.5', title: 'Fixed random songs vanishing on delete, scroll-jump while loading, plus direct playlist import and bulk export', items: [
+      'Fixed imports silently defaulting into whichever playlist you happened to be viewing — new songs now only go into your library (All Songs) unless you explicitly choose to add them to a playlist',
+      'That default-playlist behavior was the real cause of a random other song appearing to vanish when you deleted one — a playlist\'s stored track list could quietly drift out of sync with what was on screen. Import behavior is now explicit, so this shouldn\'t happen again',
+      'Fixed the song list jumping back to the top while a song was playing or loading — it was rebuilding the whole list in the background (for duration/tag updates) and resetting scroll position every time; scroll position is now preserved',
+      'New: "Add audio files to [playlist]" in a playlist\'s ⋯ menu — import files directly into a specific playlist instead of only into All Songs',
+      'New "Unsorted" tab next to Favorites — shows only songs that aren\'t in any of your playlists yet',
+      'New "Export selected" button when multi-selecting songs — zips up just the songs you picked (with playlist info if you selected from within one)',
+      'New quick actions on the hold-down song sheet: Add/Remove Favorite and Play Next, without needing the full menu',
+    ] },
     { version: '35.4', title: 'Onboarding on first launch + fixed a long playlist name pushing buttons off-screen', items: [
       'The How to use SideCut guide now opens automatically the very first time the app is ever opened, no need to go find it in Settings',
       'Fixed a long playlist name stretching its whole header row wider than the screen — the sort dropdown, mix, reorder, and kebab buttons could get pushed off-screen or leave odd extra space on the side. That row now scrolls left-right on its own instead of affecting anything else',
@@ -3703,7 +3714,7 @@
     return size + '_' + title.toLowerCase().trim() + '_' + (lastModified || 0);
   }
 
-  function handleFiles(fileList){
+  function handleFiles(fileList, targetPlaylist){
     const added = [];
     let skippedDup = 0, skippedType = 0;
     const seenKeys = new Set(allTracks.map(t => dupKey((t.file && t.file.size) || 0, t.name, t.file && t.file.lastModified)));
@@ -3728,16 +3739,25 @@
       const track = { id, file, name: meta.title, artist: meta.artist, url, duration: null, genre: null, gain: null, artBlob: null, artUrl: null };
       allTracks.push(track);
       playlists['All Songs'].push(id);
-      // New imports always land in All Songs only — they used to also get pushed into
-      // whatever playlist happened to be open at the time, which meant picking files
-      // while viewing a playlist silently dropped them in there instead of just the
-      // library. Add to a specific playlist manually afterward if you want that.
+      // New imports land in All Songs, plus targetPlaylist if one was passed in
+      // explicitly (e.g. "Add files to this playlist" from a playlist's More
+      // menu). They no longer silently default into whatever playlist happens
+      // to be open — that was the actual bug: every import quietly got pushed
+      // into the last-viewed playlist even when the user never asked for that,
+      // and removing those tracks later could desync a playlist's stored order
+      // from what was on screen, making an unrelated song look like it "vanished"
+      // on delete. Explicit target only, never an implicit "current tab" guess.
+      if(targetPlaylist && targetPlaylist !== 'All Songs' && targetPlaylist !== UNSORTED_VIEW){
+        if(!playlists[targetPlaylist]) playlists[targetPlaylist] = [];
+        playlists[targetPlaylist].push(id);
+      }
       added.push(track);
       persistTrackMeta(track);
     });
     if(added.length){
       saveMeta();
       let msg = `Added ${added.length} track${added.length>1?'s':''} to your library`;
+      if(targetPlaylist && targetPlaylist !== 'All Songs' && targetPlaylist !== UNSORTED_VIEW) msg += ` and "${targetPlaylist}"`;
       if(skippedDup) msg += ` · skipped ${skippedDup} duplicate${skippedDup>1?'s':''}`;
       if(skippedType) msg += ` · skipped ${skippedType} non-audio file${skippedType>1?'s':''}`;
       toast(msg);
@@ -3788,6 +3808,11 @@
     list.appendChild(exportBtn);
 
     if(!isAllSongs){
+      const addFilesBtn = document.createElement('button');
+      addFilesBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg> Add audio files to "${escapeHtml(activePlaylist)}"`;
+      addFilesBtn.addEventListener('click', () => { $('songActionsBackdrop').style.display='none'; $('addFilesToPlaylistInput').click(); });
+      list.appendChild(addFilesBtn);
+
       const importIntoBtn = document.createElement('button');
       importIntoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Import .zip into "${escapeHtml(activePlaylist)}"`;
       importIntoBtn.addEventListener('click', () => { $('songActionsBackdrop').style.display='none'; $('importIntoPlaylistInput').click(); });
@@ -3932,6 +3957,11 @@
     e.target.value = '';
     if(file) importLibrary(file, activePlaylist);
   });
+  $('addFilesToPlaylistInput').addEventListener('change', e => {
+    const targetPlaylist = activePlaylist;
+    handleFiles(e.target.files, targetPlaylist);
+    e.target.value = '';
+  });
 
   // ---------------- Tabs / playlists ----------------
   function renderTabs(){
@@ -3961,6 +3991,24 @@
         renderList();
       });
       tabs.appendChild(el);
+      // "Unsorted" is a virtual, always-pinned tab right after Favorites —
+      // songs that aren't in any real (non-Favorites) playlist yet. It's
+      // computed on the fly in renderListInner, never stored as its own
+      // playlists[] entry, so it can't drift out of sync or get deleted.
+      if(name === 'Favorites'){
+        const unsortedEl = document.createElement('div');
+        unsortedEl.className = 'tab' + (activePlaylist === UNSORTED_VIEW ? ' active' : '');
+        unsortedEl.textContent = 'Unsorted';
+        unsortedEl.dataset.playlistName = UNSORTED_VIEW;
+        unsortedEl.addEventListener('click', () => {
+          activePlaylist = UNSORTED_VIEW;
+          reorderMode = false;
+          if(shuffle) regenerateShuffleOrder();
+          renderTabs();
+          renderList();
+        });
+        tabs.appendChild(unsortedEl);
+      }
     });
     const newTab = document.createElement('div');
     newTab.className = 'tab';
@@ -4160,7 +4208,31 @@
   }
   function renderListInner(){
     const pane = $('listPane');
-    const rawIds = playlists[activePlaylist] || [];
+    // renderList rebuilds the whole pane (pane.innerHTML = '') which resets
+    // scrollTop to 0 as a side effect. This function gets called constantly
+    // while playing/importing (duration reads, tag reads), so without
+    // restoring it, the list silently jumped back to the top every time a
+    // song's metadata finished loading in the background — exactly what
+    // "scrolling up while playing a song is bugged" looked like. Skip the
+    // restore when the playlist itself changed (tab switch) since jumping to
+    // a stale scroll position on a different list looks wrong.
+    const prevScrollTop = (renderListInner._lastPlaylist === activePlaylist) ? pane.scrollTop : 0;
+    renderListInner._lastPlaylist = activePlaylist;
+    const isUnsortedView = activePlaylist === UNSORTED_VIEW;
+    let rawIds;
+    if(isUnsortedView){
+      // Songs that aren't a member of any real user playlist (Favorites and
+      // All Songs don't count as "sorted" for this purpose — this is about
+      // the playlists you've actually organized things into).
+      const inSomePlaylist = new Set();
+      Object.keys(playlists).forEach(name => {
+        if(name === 'All Songs' || name === 'Favorites') return;
+        playlists[name].forEach(id => inSomePlaylist.add(id));
+      });
+      rawIds = allTracks.map(t => t.id).filter(id => !inSomePlaylist.has(id));
+    } else {
+      rawIds = playlists[activePlaylist] || [];
+    }
     let ids;
     if(shuffle && shuffledOrderCache && shuffledOrderCache.playlist === activePlaylist){
       // Keep only ids still actually in this playlist (in case something was removed/deleted)
@@ -4179,7 +4251,11 @@
         return (t.name||'').toLowerCase().includes(searchQuery) || (t.artist||'').toLowerCase().includes(searchQuery);
       });
     }
-    const isAllSongs = activePlaylist === 'All Songs';
+    // Unsorted behaves like All Songs for capability purposes: no reorder
+    // (there's no real order to reorder), no "remove from playlist" (there's
+    // no playlist membership to remove from), and delete/kebab act on the
+    // library the same way.
+    const isAllSongs = activePlaylist === 'All Songs' || isUnsortedView;
 
     pane.innerHTML = '';
     const totalSeconds = ids.reduce((sum, id) => {
@@ -4197,11 +4273,13 @@
         <div class="pane-header-spacer"></div>
         <div class="pane-actions">
           <button class="icon-btn" id="selectCancelBtn" title="Cancel"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg></button>
+          <button class="icon-btn" id="selectExportBtn" title="Export selected to .zip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h4.17v6h4V9h4.17L12 2z"/></svg></button>
           <button class="icon-btn" id="selectDeleteBtn" title="Delete selected" style="color:var(--coral); border-color:var(--coral);"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
         </div>
       `;
       pane.appendChild(header);
       $('selectCancelBtn').addEventListener('click', exitSelectMode);
+      $('selectExportBtn').addEventListener('click', exportSelected);
       $('selectDeleteBtn').addEventListener('click', deleteSelected);
     } else if(reorderMode && !isAllSongs && currentSort === 'default'){
       header.innerHTML = `
@@ -4303,6 +4381,7 @@
     });
 
     renderDuplicateBanner();
+    if(prevScrollTop) pane.scrollTop = prevScrollTop;
   }
 
   // ---------------- Multi-select (long-press) ----------------
@@ -4334,7 +4413,20 @@
     if(navigator.vibrate) navigator.vibrate(15);
     const list = $('holdChoiceList');
     list.innerHTML = '';
-    const isAllSongsView = activePlaylist === 'All Songs';
+    const isAllSongsView = activePlaylist === 'All Songs' || activePlaylist === UNSORTED_VIEW;
+
+    // Quick actions on the hold-down sheet, so common single-song actions
+    // (favorite, play next) don't require a second tap into the full kebab menu.
+    const isFavHold = playlists['Favorites'].includes(id);
+    const favHoldBtn = document.createElement('button');
+    favHoldBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="${isFavHold?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.33-8.2C.86 10.1 1.6 6.6 4.5 5.1c2.1-1.08 4.6-.4 6 1.4.5.65.9 1.3 1.5 1.3.6 0 1-.65 1.5-1.3 1.4-1.8 3.9-2.48 6-1.4 2.9 1.5 3.64 5 1.83 7.7C18.7 16.65 12 21 12 21z"/></svg> ${isFavHold ? 'Remove from Favorites' : 'Add to Favorites'}`;
+    favHoldBtn.addEventListener('click', () => { $('holdChoiceBackdrop').style.display = 'none'; toggleFavorite(id); });
+    list.appendChild(favHoldBtn);
+
+    const nextHoldBtn = document.createElement('button');
+    nextHoldBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h9v2H4zm0 5h9v2H4zm0 5h6v2H4zM17 6v4h-3l4 5 4-5h-3V6z"/></svg> Play next`;
+    nextHoldBtn.addEventListener('click', () => { $('holdChoiceBackdrop').style.display = 'none'; playNext(id); });
+    list.appendChild(nextHoldBtn);
 
     const selectBtn = document.createElement('button');
     selectBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg> Select multiple songs`;
@@ -4369,7 +4461,7 @@
     if(!t) return;
     $('songActionsTitle').textContent = t.name;
     const isFav = playlists['Favorites'].includes(id);
-    const isAllSongsView = activePlaylist === 'All Songs';
+    const isAllSongsView = activePlaylist === 'All Songs' || activePlaylist === UNSORTED_VIEW;
     const list = $('songActionsList');
     list.innerHTML = '';
 
@@ -4546,7 +4638,7 @@
   }
 
   function deleteSelected(){
-    const isAllSongs = activePlaylist === 'All Songs';
+    const isAllSongs = activePlaylist === 'All Songs' || activePlaylist === UNSORTED_VIEW;
     const count = selectedIds.size;
     if(!count) return;
     const scopeText = isAllSongs ? 'from your library' : 'from this playlist';
@@ -4658,11 +4750,21 @@
   async function exportPlaylist(){
     const ids = playlists[activePlaylist] || [];
     if(!ids.length){ toast('Nothing to export yet.'); return; }
+    await exportTracksAsZip(ids, activePlaylist.replace(/[^a-z0-9]/gi,'_'), { [activePlaylist]: ids });
+  }
+
+  // Shared zip-export helper for any explicit set of track ids — used by
+  // "Export playlist" and by "Export selected" (multi-select in the kebab's
+  // select mode). manifestPlaylists, if given, is included so importing the
+  // zip elsewhere restores that playlist grouping too; omit it for a plain
+  // bundle of tracks with no playlist association (e.g. an ad-hoc selection).
+  async function exportTracksAsZip(ids, filenameBase, manifestPlaylists){
+    if(!ids.length){ toast('Nothing to export yet.'); return; }
     if(typeof JSZip === 'undefined'){ toast('Export tool failed to load — check your connection and reload.'); return; }
-    toast('Zipping playlist…', 4000);
+    toast('Zipping songs…', 4000);
     try{
       const zip = new JSZip();
-      const manifest = { playlists: { [activePlaylist]: ids }, tracks: [] };
+      const manifest = { playlists: manifestPlaylists || {}, tracks: [] };
       let missing = 0;
       ids.forEach(id => {
         const t = allTracks.find(tr => tr.id === id);
@@ -4677,13 +4779,21 @@
       const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = activePlaylist.replace(/[^a-z0-9]/gi,'_') + '.zip';
+      a.download = filenameBase + '.zip';
       a.click();
-      toast(missing ? `Playlist exported (${missing} track${missing>1?'s':''} skipped — file missing)` : 'Playlist exported — import this .zip on another device to restore it');
+      toast(missing ? `Exported (${missing} track${missing>1?'s':''} skipped — file missing)` : 'Exported — import this .zip on another device to restore it');
     }catch(e){
       console.error(e);
       toast('Export failed: ' + (e.message || 'see console for details'));
     }
+  }
+
+  function exportSelected(){
+    const ids = Array.from(selectedIds);
+    if(!ids.length) return;
+    const isAllSongsCtx = activePlaylist === 'All Songs' || activePlaylist === UNSORTED_VIEW;
+    const manifestPlaylists = isAllSongsCtx ? undefined : { [activePlaylist]: ids };
+    exportTracksAsZip(ids, `sidecut-selection-${ids.length}`, manifestPlaylists);
   }
 
   // Full library export/import — bundles actual audio + playlists into one
