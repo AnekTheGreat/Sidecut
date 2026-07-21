@@ -664,7 +664,13 @@
     height: calc(var(--edge-glow-len, 0) * 1%);
     background: var(--coral);
     transform: translateY(-50%);
-    z-index:9998; pointer-events:none;
+    /* Was z-index:9998 — miles above the header, list, and every modal in the
+       app (nothing else here goes past 60). On some mobile browsers a
+       high-stacked position:fixed layer intercepts scroll/tap gesture
+       recognition even with pointer-events:none, which is exactly the RGB+
+       "buttons don't respond, scrolling feels stuck" bug. Same fix as the
+       top/bottom/corner glow bands got in 35.2: keep it behind real UI. */
+    z-index:1; pointer-events:none;
     opacity:0; transition: opacity 0.3s ease;
     border-radius:2px;
   }
@@ -702,7 +708,8 @@
     height: calc(var(--edge-glow-len-left, 0) * 1%);
     background: var(--gold);
     transform: translateY(-50%);
-    z-index:9998; pointer-events:none;
+    /* Same stacking fix as #edgeGlowLine above — see comment there. */
+    z-index:1; pointer-events:none;
     opacity:0; transition: opacity 0.3s ease;
     border-radius:2px;
   }
@@ -1990,6 +1997,7 @@
     document.documentElement.style.setProperty('--glow-pump', '0');
   }
   let glowFrameSkip = 0;
+  let glowWaveBarsCache = null; // invalidated whenever #waveformBar's bars are rebuilt (track change / seek style change)
   function startGlowSync(){
     if(glowLoopHandle) return; // already running
     ensureGlowAnalyser(activeIdx);
@@ -2063,9 +2071,15 @@
       svg.classList.add('live');
       // If the "Waveform" seek style is active, give its bars the same subtle bass jitter
       // instead of (or alongside) the line ripple — same source, same restraint.
-      if($('waveformBar').style.display !== 'none'){
-        const bars = document.querySelectorAll('#waveformBar .wave-bar');
-        bars.forEach((bar, i) => {
+      // Cached instead of re-querying the DOM on every tick (~20/sec while playing) —
+      // one more bit of steady background main-thread work trimmed, on top of the
+      // buffer reuse above, so scrolling/tapping stays responsive in RGB+.
+      const waveformEl = $('waveformBar');
+      if(waveformEl.style.display !== 'none'){
+        if(!glowWaveBarsCache || glowWaveBarsCache.length !== waveformEl.children.length){
+          glowWaveBarsCache = waveformEl.querySelectorAll('.wave-bar');
+        }
+        glowWaveBarsCache.forEach((bar, i) => {
           const base = currentWaveform ? (currentWaveform[i] != null ? currentWaveform[i] : 0.15) : 0.35;
           const wobble = Math.sin(waveSeed + i * 2.3) * 0.5 + 0.5; // 0..1, per-bar phase offset
           const jitter = wobble * lineLevel * 0.28; // small — nudges height, doesn't redraw the song
@@ -2846,8 +2860,13 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '35.5';
+  const APP_VERSION = '35.6';
   const CHANGELOG = [
+    { version: '35.6', title: 'Fixed scrolling and buttons feeling stuck/glitchy while playing in RGB+', items: [
+      'Found it: the two glow edge lines (right + left accent lines) were sitting at a wildly high stacking order — far above the header, the song list, and every modal in the app. On some mobile browsers, a fixed layer stacked that high can quietly swallow scroll and tap gestures even with pointer-events disabled on it',
+      'The rest of the glow suite (top/bottom blur, corner glow) already got this same fix back in 35.2 — the two edge lines were the one piece that got missed. They now sit behind the real UI like everything else, so scrolling the list and tapping buttons should feel completely normal in RGB+ again',
+      'Also trimmed a small bit of steady background work in the glow-sync loop: the waveform seek style was re-querying the DOM for its bars on every single tick while playing (~20x/sec) — that lookup is now cached',
+    ] },
     { version: '35.5', title: 'Fixed random songs vanishing on delete, scroll-jump while loading, plus direct playlist import and bulk export', items: [
       'Fixed imports silently defaulting into whichever playlist you happened to be viewing — new songs now only go into your library (All Songs) unless you explicitly choose to add them to a playlist',
       'That default-playlist behavior was the real cause of a random other song appearing to vanish when you deleted one — a playlist\'s stored track list could quietly drift out of sync with what was on screen. Import behavior is now explicit, so this shouldn\'t happen again',
