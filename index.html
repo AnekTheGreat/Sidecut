@@ -64,6 +64,10 @@
   .disc{
     width:120px; height:120px; border-radius:50%;
     touch-action: none;
+    /* #npDisc's parent (#npPlayerBody) now sets pointer-events:none to keep the 3D
+       turntable wrapper out of hit-testing — see the comment there. This opts the
+       disc itself back in, since it's the one part meant to be tapped. */
+    pointer-events:auto;
     background:
       radial-gradient(circle at 32% 28%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 32%),
       repeating-radial-gradient(circle at center, #12181a 0, #12181a 1.5px, #1b2224 1.5px, #1b2224 3px);
@@ -573,6 +577,21 @@
   #npPlayerBody{
     position:absolute; right:0; bottom:1px; width:46px; height:46px; flex-shrink:0; transform: translateZ(1px);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
+    /* This element only exists to position the 3D turntable scene (rotateX'd lid,
+       translateZ'd disc, etc. below) — it has no click handler of its own, only its
+       .disc child (#npDisc) does. Debug confirmed document.elementFromPoint() was
+       reporting THIS element as the topmost hit at tap coordinates way up near the
+       header/tabs, nowhere near where it's actually drawn — perspective + translateZ
+       inside a small, tightly-perspectived stage (#npPlayerStage, perspective:220px)
+       is a known source of hit-test miscalculation in some browsers' 3D compositing:
+       the browser can compute the hit region from the untransformed layout box rather
+       than where the 3D transform actually renders it, so a small transformed element
+       can end up "catching" taps at coordinates nowhere near its visible position.
+       Since this wrapper doesn't need to be clickable itself, disabling pointer-events
+       here removes it from hit-testing entirely — #npDisc below opts back in with its
+       own pointer-events:auto since that's the one part that's actually meant to be
+       tapped. */
+    pointer-events:none;
   }
   /* Base: a raised ring the platter/record actually sits on top of, giving the record real depth.
      Sized a bit larger than the platter so its edge peeks out visibly all the way around. */
@@ -1796,24 +1815,6 @@
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-
-  // TEMPORARY DIAGNOSTIC for the "top-half buttons dead in RGB+ while playing" bug.
-  // Every earlier fix targeted a CSS property that looked like a plausible cause
-  // (z-index, clip-path, filter) and got verified in isolation, but the symptom kept
-  // reproducing — meaning the actual blocking element was never actually confirmed,
-  // only guessed at. This logs, on every tap in the top ~250px of the screen, exactly
-  // what document.elementFromPoint() says is on top at that point — the real answer,
-  // not another CSS guess. Shows up as a toast so it's visible without a laptop/devtools
-  // plugged in. Safe to remove entirely once the real element is identified — search
-  // for "RGB_DEBUG" to find every piece of this.
-  window.addEventListener('pointerdown', (e) => {
-    if(e.clientY > 250) return; // only care about the reported dead zone
-    if(!(THEMES[currentTheme] && THEMES[currentTheme].rgbPlus)) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const desc = el ? `${el.tagName}${el.id ? '#'+el.id : ''}${el.className && typeof el.className === 'string' ? '.'+el.className.split(' ').join('.') : ''}` : 'nothing';
-    console.log('[RGB_DEBUG] tap at', e.clientX, e.clientY, '-> topmost element:', desc, el);
-    toast('[DEBUG] tap hit: ' + desc, 4000);
-  }, true); // capture phase — runs before anything can stop propagation
   // Captured before any script-driven DOM mutation, so it's a clean copy of the shipped shell —
   // used by the in-app version rollback feature below.
   const SHELL_SNAPSHOT_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
@@ -2946,8 +2947,13 @@
   //   - Decimal .5 (29.5, 30.5, ...): small stuff — bug fixes, tweaks, minor
   //     additions, visual polish, copy changes.
   // The service worker's cache name should be bumped to match on every change too.
-  const APP_VERSION = '35.6';
+  const APP_VERSION = '35.7';
   const CHANGELOG = [
+    { version: '35.7', title: 'Actually fixed: top-half buttons unresponsive in RGB+ while playing', items: [
+      'Found the real cause this time (confirmed with an on-screen tap diagnostic, not another guess): the small 3D turntable disc in the now-playing bar sits inside a tightly-perspectived 3D scene (a 220px perspective on a 60×50px box). That combination is a known trigger for some browsers to miscalculate hit-testing on 3D-transformed elements — the invisible turntable wrapper was being reported as the "topmost" element at tap coordinates way up near the header and tabs, nowhere near where it\'s actually drawn, only while it was actively spinning (i.e. only while playing)',
+      'The turntable wrapper never needed to be clickable itself — only the disc inside it does — so it\'s now excluded from hit-testing entirely, with the disc opting back in on its own. This should be the real, final fix for tabs/kebab/header buttons going unresponsive during RGB+ playback',
+      'Several earlier attempts in this version cycle targeted plausible-looking CSS properties (z-index, clip-path, filter) that turned out not to be the actual cause — genuine improvements, but not the fix. Apologies for the run-around on this one',
+    ] },
     { version: '35.6', title: 'Fixed scrolling and buttons feeling stuck/glitchy while playing in RGB+', items: [
       'Found it: the two glow edge lines (right + left accent lines) were sitting at a wildly high stacking order — far above the header, the song list, and every modal in the app. On some mobile browsers, a fixed layer stacked that high can quietly swallow scroll and tap gestures even with pointer-events disabled on it',
       'The rest of the glow suite (top/bottom blur, corner glow) already got this same fix back in 35.2 — the two edge lines were the one piece that got missed. They now sit behind the real UI like everything else, so scrolling the list and tapping buttons should feel completely normal in RGB+ again',
