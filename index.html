@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head> 
@@ -1135,6 +1136,178 @@
   transition: opacity 0.2s ease;
 }
 .modal-btns .spotify-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Settings pane scrollbar ─── */
+.settings-scroll {
+  height: 52vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding-right: 6px;
+}
+.settings-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+.settings-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--coral) 35%, transparent);
+  border-radius: 3px;
+}
+.settings-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--coral) 55%, transparent);
+}
+.settings-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--coral) 35%, transparent) transparent;
+}
+
+/* ─── Download tab polish ─── */
+.download-section {
+  padding-bottom: 8px;
+}
+.download-section .input-group input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 20px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+.download-section .input-group input:focus {
+  outline: none;
+  border-color: var(--coral);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 20%, transparent);
+}
+.download-section .input-group button {
+  background: var(--coral);
+  color: #161616;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+.download-section .input-group button:active { transform: scale(0.95); }
+.download-section .input-group button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.modal-btns .spotify-confirm {
+  background: var(--coral);
+  color: #161616;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+.modal-btns .spotify-confirm:active { transform: scale(0.96); }
+.modal-btns .spotify-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Download spinner */
+.dl-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: dl-spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes dl-spin { to { transform: rotate(360deg); } }
+
+/* Settings tab buttons polish */
+.modal .tab {
+  font-size: 11.5px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.modal .tab.active {
+  color: var(--bg);
+  background: var(--coral);
+  border-color: var(--coral);
+  font-weight: 600;
+}
+.modal .tab#settingsTabDownload {
+  background: #1DB954;
+  color: #fff;
+  border-color: #1DB954;
+}
+.modal .tab#settingsTabDownload.active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #161616;
+}
+
+/* Download progress bar polish */
+.download-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 10px 0 6px;
+}
+.download-progress-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--coral), var(--gold));
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 3px;
+}
+.download-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-dim);
+  padding: 2px 0 4px;
+}
+.download-stats .count { color: var(--ink); font-weight: 600; }
+
+/* Track preview list polish */
+.track-preview-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 8px 4px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--coral) 30%, transparent) transparent;
+}
+.track-preview-list::-webkit-scrollbar { width: 4px; }
+.track-preview-list::-webkit-scrollbar-track { background: transparent; }
+.track-preview-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--coral) 30%, transparent);
+  border-radius: 2px;
+}
+.track-preview-list .preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 6px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.track-preview-list .preview-item:hover {
+  background: rgba(255,255,255,0.03);
+}
+
 </style>
 </head>
 <body>
@@ -1354,7 +1527,7 @@
       <button class="tab" id="settingsTabMore" style="flex:1; text-align:center;">More</button>
     </div>
 
-    <div id="settingsPanesWrap" style="height:56vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+    <div id="settingsPanesWrap" class="settings-scroll">
     <div id="settingsPaneTheme">
       <div id="themeOptions" style="display:flex; flex-direction:column; gap:8px;"></div>
 
@@ -2609,45 +2782,76 @@ async function downloadSpotifyTracks() {
     }
 
     const track = tracks[0];
+    const downloadBtn = document.getElementById('spotifyDownloadBtn');
+    const statusEl = document.getElementById('spotifyStatus');
+    const progressFill = document.getElementById('spotifyProgressFill');
+    const dlStatus = document.getElementById('spotifyDownloadStatus');
+    const countDisplay = document.getElementById('spotifyCountDisplay');
+
+    // Disable button and show loading state
+    if (downloadBtn) {
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<span class="dl-spinner"></span> Downloading...';
+        downloadBtn.style.background = 'var(--bg)';
+        downloadBtn.style.color = 'var(--ink-dim)';
+    }
+    if (statusEl) statusEl.textContent = '';
+    if (dlStatus) dlStatus.textContent = 'Fetching from YouTube...';
+    if (progressFill) progressFill.style.width = '15%';
+
+    // Show a pulse to indicate the connection is being established
+    let pulseTimer = setInterval(() => {
+        if (progressFill && parseFloat(progressFill.style.width) < 85) {
+            progressFill.style.width = (parseFloat(progressFill.style.width) + 2) + '%';
+        }
+    }, 2000);
 
     try {
-        toast("Downloading Spotify track...");
-
         const response = await fetch(
             "https://sidecut-backend-tlpa.onrender.com/download",
             {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    url: track.url
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: track.url })
             }
         );
 
         if (!response.ok) {
-            throw new Error("Download failed");
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || "Download failed (server error)");
         }
 
+        if (progressFill) progressFill.style.width = '90%';
+        if (dlStatus) dlStatus.textContent = 'Receiving audio data...';
+
         const blob = await response.blob();
+
+        if (progressFill) progressFill.style.width = '100%';
+        if (dlStatus) dlStatus.textContent = 'Done!';
 
         const file = new File(
             [blob],
             `${track.artist || "Unknown"} - ${track.title || "Spotify Track"}.mp3`,
-            {
-                type: "audio/mpeg"
-            }
+            { type: "audio/mpeg" }
         );
 
-        // Send it through SideCut's normal importer
         handleFiles([file]);
-
-        toast("Spotify song added to library!");
+        toast("Added to library: " + (track.title || "track"));
 
     } catch (error) {
         console.error("Spotify download error:", error);
-        toast("Spotify download failed.");
+        const msg = error.message || "Download failed";
+        toast(msg.includes("timeout") || msg.includes("Failed to fetch") ? "Download timed out — the server may be starting up. Try again in 30 seconds." : "Download failed: " + msg);
+        if (dlStatus) dlStatus.textContent = 'Failed';
+        if (progressFill) progressFill.style.width = '0%';
+    } finally {
+        clearInterval(pulseTimer);
+        if (downloadBtn) {
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="fas fa-download"></i> Add To Library';
+            downloadBtn.style.background = '';
+            downloadBtn.style.color = '';
+        }
     }
 }
   function showSettingsTab(tab){
