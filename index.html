@@ -2610,6 +2610,30 @@ function downloadSpotifyTracks() {
         return;
     }
 
+    const trackData = tracks[0];
+
+    // Keep Spotify separate from normal SideCut songs
+    if (!window.spotifySavedTracks) {
+        window.spotifySavedTracks = [];
+    }
+
+    const spotifyTrack = {
+        id: "spotify_" + Date.now(),
+        name: trackData.title || trackData.name || "Unknown",
+        artist: trackData.artist || "Unknown Artist",
+        album: trackData.album || "",
+        artwork: trackData.artwork || "",
+        url: trackData.url || "",
+        source: "Spotify"
+    };
+
+    window.spotifySavedTracks.push(spotifyTrack);
+
+    console.log("Spotify track saved separately:", spotifyTrack);
+
+    toast("Spotify track loaded!");
+}
+
     const track = tracks[0];
 
     // Keep Spotify separate from MP3 library
