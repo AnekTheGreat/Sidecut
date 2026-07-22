@@ -2601,7 +2601,6 @@ async function fetchSpotifyPlaylist(spotifyUrl) {
     }
 }
 
-
 function downloadSpotifyTracks() {
     const tracks = window._spotifyTracks || [];
 
@@ -2634,19 +2633,6 @@ function downloadSpotifyTracks() {
     toast("Spotify track loaded!");
 }
 
-    const track = tracks[0];
-
-    // Keep Spotify separate from MP3 library
-    if (!window._spotifyTracksLibrary) {
-        window._spotifyTracksLibrary = [];
-    }
-
-    window._spotifyTracksLibrary.push(track);
-
-    toast("Spotify track saved!");
-
-    console.log("Spotify saved:", track);
-}
   function showSettingsTab(tab){
     $('settingsPaneTheme').style.display = tab === 'theme' ? '' : 'none';
     $('settingsPaneGlow').style.display = tab === 'glow' ? '' : 'none';
