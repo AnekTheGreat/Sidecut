@@ -2505,216 +2505,130 @@
 // PUT THIS AT THE TOP OF YOUR SCRIPT, BEFORE showSettingsTab
 
 const SPOTIFY_API_BASE = 'https://sidecut-backend-tlpa.onrender.com';
-const CORS_PROXY = 'https://api.allorigins.win/raw?url='; // or use 'https://api.allorigins.win/raw?url='
+
 async function fetchSpotifyPlaylist(spotifyUrl) {
     const statusEl = document.getElementById('spotifyStatus');
     const previewEl = document.getElementById('spotifyTracksPreview');
     const listEl = document.getElementById('spotifyTrackList');
     const nameEl = document.getElementById('spotifyPlaylistName');
     const countEl = document.getElementById('spotifyTrackCount');
-    const progressFill = document.getElementById('spotifyProgressFill');
-    const downloadStatus = document.getElementById('spotifyDownloadStatus');
-    const countDisplay = document.getElementById('spotifyCountDisplay');
     const downloadBtn = document.getElementById('spotifyDownloadBtn');
 
     if (!listEl) return;
 
-    listEl.innerHTML = '';
-    if (progressFill) progressFill.style.width = '0%';
-    if (downloadStatus) downloadStatus.textContent = 'Loading playlist...';
-    if (countDisplay) countDisplay.textContent = '0 / 0';
+    listEl.innerHTML = "";
+
+    if (statusEl) statusEl.textContent = "Fetching Spotify metadata...";
     if (downloadBtn) {
         downloadBtn.disabled = true;
-        downloadBtn.textContent = 'Loading...';
+        downloadBtn.textContent = "Loading...";
     }
-    if (previewEl) previewEl.style.display = 'none';
-    if (statusEl) statusEl.textContent = 'Fetching playlist metadata...';
 
     try {
-        let spotifyId = spotifyUrl;
-        const idMatch = spotifyUrl.match(/spotify\.com\/(playlist|track|album|artist)\/([a-zA-Z0-9]+)/);
-        if (idMatch) {
-            spotifyId = idMatch[2];
-        } else if (/^[a-zA-Z0-9]{22}$/.test(spotifyUrl)) {
-            spotifyId = spotifyUrl;
-        } else {
-            if (statusEl) statusEl.textContent = 'Invalid Spotify link. Please paste a valid playlist, album, or track URL.';
-            if (downloadBtn) {
-                downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Download All as MP3';
-            }
-            return;
-        }
-
-        window._spotifyTracks = data.tracks;
-        window._spotifyPlaylistName = data.playlist_info?.name || 'Spotify Playlist';
-
-        if (nameEl) nameEl.textContent = window._spotifyPlaylistName;
-        if (countEl) countEl.textContent = `${data.tracks.length} tracks`;
-        if (statusEl) statusEl.textContent = `Found ${data.tracks.length} tracks. Ready to download as MP3.`;
-
-        data.tracks.forEach((track, i) => {
-            const div = document.createElement('div');
-            div.className = 'preview-item';
-            div.innerHTML = `
-                <span>${escapeHtml(track.artists?.join(', ') || 'Unknown')} - ${escapeHtml(track.name || 'Untitled')}</span>
-                <span class="status pending">pending</span>
-            `;
-            div.dataset.index = i;
-            listEl.appendChild(div);
+        const response = await fetch(`${SPOTIFY_API_BASE}/metadata`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                url: spotifyUrl
+            })
         });
 
-        if (previewEl) previewEl.style.display = 'block';
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || "Failed to load Spotify data");
+        }
+
+        const track = {
+            name: data.id,
+            title: data.title || "Unknown",
+            artist: data.artist || "Unknown",
+            album: data.album || "",
+            artwork: data.artwork || "",
+            url: spotifyUrl
+        };
+
+        window._spotifyTracks = [track];
+
+        if (nameEl) {
+            nameEl.textContent = track.title;
+        }
+
+        if (countEl) {
+            countEl.textContent = "1 track";
+        }
+
+        const div = document.createElement("div");
+        div.className = "preview-item";
+
+        div.innerHTML = `
+            <span>
+                ${escapeHtml(track.artist)} - ${escapeHtml(track.title)}
+            </span>
+            <span class="status done">
+                ✓ Ready
+            </span>
+        `;
+
+        listEl.appendChild(div);
+
+        if (previewEl) {
+            previewEl.style.display = "block";
+        }
+
+        if (statusEl) {
+            statusEl.textContent = "Spotify metadata loaded.";
+        }
+
         if (downloadBtn) {
             downloadBtn.disabled = false;
-            downloadBtn.textContent = `Download ${data.tracks.length} MP3s`;
+            downloadBtn.textContent = "Add To Library";
         }
-        if (countDisplay) countDisplay.textContent = `0 / ${data.tracks.length}`;
-        if (downloadStatus) downloadStatus.textContent = 'Ready to download';
-        window._spotifyTracks = data.tracks;
 
     } catch (err) {
-        console.error('Spotify fetch error:', err);
-        if (statusEl) statusEl.textContent = `Error: ${err.message || 'Failed to load playlist'}`;
-        const downloadBtn = document.getElementById('spotifyDownloadBtn');
+        console.error("Spotify error:", err);
+
+        if (statusEl) {
+            statusEl.textContent = "Error: " + err.message;
+        }
+
         if (downloadBtn) {
             downloadBtn.disabled = true;
-            downloadBtn.textContent = 'Download All as MP3';
+            downloadBtn.textContent = "Add To Library";
         }
     }
 }
 
-async function downloadSpotifyTracks() {
+
+function downloadSpotifyTracks() {
     const tracks = window._spotifyTracks || [];
+
     if (!tracks.length) {
-        toast('No tracks to download.');
+        toast("No Spotify track loaded.");
         return;
     }
 
-    const downloadBtn = document.getElementById('spotifyDownloadBtn');
-    const cancelBtn = document.getElementById('spotifyCancelBtn');
-    const progressFill = document.getElementById('spotifyProgressFill');
-    const downloadStatus = document.getElementById('spotifyDownloadStatus');
-    const countDisplay = document.getElementById('spotifyCountDisplay');
-    const statusEl = document.getElementById('spotifyStatus');
+    const track = tracks[0];
 
-    if (downloadBtn) {
-        downloadBtn.disabled = true;
-        downloadBtn.textContent = 'Downloading...';
-    }
-    if (cancelBtn) cancelBtn.style.display = 'block';
-    if (statusEl) statusEl.textContent = 'Downloading MP3 files...';
+    // Add metadata to SideCut library
+    const fileData = {
+        name: track.title,
+        artist: track.artist,
+        album: track.album,
+        artwork: track.artwork,
+        source: "Spotify",
+        spotifyUrl: track.url
+    };
 
-    let downloaded = 0;
-    let failed = 0;
-    let cancelled = false;
+    console.log("Adding Spotify track:", fileData);
 
-    const items = document.querySelectorAll('#spotifyTrackList .preview-item');
-
-    if (cancelBtn) {
-        cancelBtn.onclick = () => {
-            cancelled = true;
-            cancelBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = 'Download cancelled.';
-            if (downloadBtn) {
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download All as MP3';
-            }
-        };
+    if (typeof handleFiles === "function") {
+        handleFiles([fileData]);
     }
 
-    for (let i = 0; i < tracks.length; i++) {
-        if (cancelled) break;
-        
-        const track = tracks[i];
-        const item = items[i];
-        if (item) {
-            const statusSpan = item.querySelector('.status');
-            if (statusSpan) {
-                statusSpan.textContent = 'downloading...';
-                statusSpan.className = 'status downloading';
-            }
-        }
-
-        try {
-            const response = await fetch(`${SPOTIFY_API_BASE}/download_track.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    track: track,
-                    user_ip: 'sidecut_local',
-                    is_premium: false,
-                    lang: 'en'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const contentType = response.headers.get('Content-Type') || '';
-            if (contentType.includes('application/json')) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Download failed');
-            }
-
-            const blob = await response.blob();
-            if (blob.size < 1000) {
-                throw new Error('Downloaded file is too small');
-            }
-
-            const artist = track.artists?.join(', ') || 'Unknown';
-            const name = track.name || 'Untitled';
-            const filename = `${artist} - ${name}.mp3`;
-
-            const file = new File([blob], filename, { type: 'audio/mpeg' });
-            handleFiles([file]);
-
-            downloaded++;
-            if (item) {
-                const statusSpan = item.querySelector('.status');
-                if (statusSpan) {
-                    statusSpan.textContent = '✓ done';
-                    statusSpan.className = 'status done';
-                }
-            }
-            if (countDisplay) countDisplay.textContent = `${downloaded} / ${tracks.length}`;
-            if (progressFill) progressFill.style.width = `${(downloaded / tracks.length) * 100}%`;
-            if (downloadStatus) downloadStatus.textContent = `Downloaded ${downloaded} of ${tracks.length}`;
-
-        } catch (err) {
-            failed++;
-            if (item) {
-                const statusSpan = item.querySelector('.status');
-                if (statusSpan) {
-                    statusSpan.textContent = '✗ failed';
-                    statusSpan.className = 'status failed';
-                }
-            }
-            console.error(`Failed to download ${track.name}:`, err);
-        }
-
-        await new Promise(r => setTimeout(r, 500));
-    }
-
-    if (cancelBtn) cancelBtn.style.display = 'none';
-    if (downloadBtn) {
-        downloadBtn.disabled = false;
-        downloadBtn.textContent = 'Download All as MP3';
-    }
-
-    if (cancelled) {
-        if (statusEl) statusEl.textContent = `Cancelled. ${downloaded} downloaded, ${failed} failed.`;
-    } else {
-        if (statusEl) statusEl.textContent = `Done! ${downloaded} MP3s downloaded, ${failed} failed.`;
-        if (downloaded > 0) {
-            toast(`Added ${downloaded} songs to your library!`);
-            if (typeof renderTabs === 'function') renderTabs();
-            if (typeof renderList === 'function') renderList();
-        }
-    }
-
-    if (progressFill) progressFill.style.width = `${(downloaded / tracks.length) * 100}%`;
+    toast("Added Spotify track info!");
 }
   function showSettingsTab(tab){
     $('settingsPaneTheme').style.display = tab === 'theme' ? '' : 'none';
