@@ -2610,42 +2610,11 @@ function downloadSpotifyTracks() {
         return;
     }
 
-    const trackData = tracks[0];
+    const track = tracks[0];
 
-    const id = 't' + (idCounter++);
+    console.log("Spotify metadata:", track);
 
-    const track = {
-        id: id,
-        file: null,
-        name: trackData.title || "Spotify Track",
-        artist: trackData.artist || "Unknown Artist",
-        url: trackData.url || "",
-        duration: null,
-        genre: null,
-        gain: null,
-        artBlob: null,
-        artUrl: trackData.artwork || null,
-        spotify: true
-    };
-
-    allTracks.push(track);
-
-    if (!playlists['All Songs']) {
-        playlists['All Songs'] = [];
-    }
-
-    playlists['All Songs'].push(id);
-
-    persistTrackMeta(track);
-    saveMeta();
-
-    toast("Added Spotify track to library!");
-
-    $('emptyState').style.display = 'none';
-    $('library').style.display = 'flex';
-
-    renderTabs();
-    renderList();
+    toast("Spotify metadata loaded!");
 }
   function showSettingsTab(tab){
     $('settingsPaneTheme').style.display = tab === 'theme' ? '' : 'none';
